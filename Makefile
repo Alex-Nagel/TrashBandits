@@ -1,12 +1,11 @@
 PROJECT_NAME = GGJ2X
 ROM = $(PROJECT_NAME).nes
 
-CC65_ROOT = $(PWD)/../cc65
-CC = $(CC65_ROOT)/bin/cc65
-AS = $(CC65_ROOT)/bin/ca65
-LD = $(CC65_ROOT)/bin/ld65
+CC = tools/cc65/bin/cc65
+AS = tools/cc65/bin/ca65
+LD = tools/cc65/bin/ld65
 
-CFLAGS += \
+C65FLAGS += \
 	-t nes -Oirs \
 	--register-space 16 \
 	-I ext/pixler/lib \
@@ -36,20 +35,10 @@ SONGS = \
 default: $(ROM)
 rom: $(ROM)
 
-PX_TOOLS_PATH = ext/pixler/tools
 PX_LIB_PATH = ext/pixler/lib
 PX_LIB = $(PX_LIB_PATH)/px.lib
 $(PX_LIB):
-	make CC65_ROOT=$(CC65_ROOT) -C $(PX_LIB_PATH)
-
-px-tools:
-	make -C $(PX_TOOLS_PATH)
-	touch px-tools
-
-FT5_TOOLS_PATH = ext/famitone5
-ft5-tools:
-	make -C $(FT5_TOOLS_PATH)
-	touch ft5-tools
+	make CC65_ROOT=tools/cc65 -C $(PX_LIB_PATH)
 
 run-mac: rom
 	open -a Nestopia $(ROM)
@@ -65,50 +54,47 @@ $(ROM): ld65.cfg $(OBJS) $(PX_LIB)
 	$(LD) -C ld65.cfg --dbgfile $(ROM:.nes=.dbg) $(OBJS) $(PX_LIB) nes.lib -m link.log -o $@
 
 %.s: %.c
-	$(CC) -g $(CFLAGS) $< --add-source $(INCLUDE) -o $@
+	$(CC) -g $(C65FLAGS) $< --add-source $(INCLUDE) -o $@
 
 %.s %.o: %.c
-	$(CC65_ROOT)/bin/cl65 -c -g $(CFLAGS) $(INCLUDE) $< -o $@
+	tools/cc65/bin/cl65 -c -g $(C65FLAGS) $(INCLUDE) $< -o $@
 
 %.o: %.s
 	$(AS) -g $< $(ASMINC) -o $@
 
-%.chr: %.png px-tools
-	$(PX_TOOLS_PATH)/png2chr $< $@
+%.chr: %.png
+	tools/png2chr $< $@
 
-%.lz4: %.chr px-tools
-	$(PX_TOOLS_PATH)/lz4x -f9 $< $@
+%.lz4: %.chr
+	tools/lz4x -f9 $< $@
 
 %.bin: %.tmx
-	python $(PX_TOOLS_PATH)/tmx2bin.py $< $@
+	python ext/pixler/tools/tmx2bin.py $< $@
 
-%.lz4: %.bin px-tools
-	$(PX_TOOLS_PATH)/lz4x -f9 $< $@
+%.lz4: %.bin
+	tools/lz4x -f9 $< $@
 
 src/data.o: $(CHR:.png=.lz4) map/splash.lz4
 
 tiles: chr/0.chr
-	$(PX_TOOLS_PATH)/chr2png "1D 00 10 20" chr/0.chr chr/0-pal0.png
-	$(PX_TOOLS_PATH)/chr2png "1D 06 16 26" chr/0.chr chr/0-pal1.png
-	$(PX_TOOLS_PATH)/chr2png "1D 09 19 29" chr/0.chr chr/0-pal2.png
-	$(PX_TOOLS_PATH)/chr2png "1D 01 11 21" chr/0.chr chr/0-pal3.png
+	tools/chr2png "1D 00 10 20" chr/0.chr chr/0-pal0.png
+	tools/chr2png "1D 06 16 26" chr/0.chr chr/0-pal1.png
+	tools/chr2png "1D 09 19 29" chr/0.chr chr/0-pal2.png
+	tools/chr2png "1D 01 11 21" chr/0.chr chr/0-pal3.png
 
-audio/sounds.s: audio/sounds.nsf ft5-tools
-	$(FT5_TOOLS_PATH)/nsf2data5 $< -ca65 -ntsc
+audio/sounds.s: audio/sounds.nsf
+	tools/nsf2data5 $< -ca65 -ntsc
 
-audio/%.s: audio/%.txt ft5-tools
-	$(FT5_TOOLS_PATH)/text2vol5 -ca65 $<
+audio/%.s: audio/%.txt
+	tools/text2vol5 -ca65 $<
 
 audio/audio.o: $(SONGS:.txt=.s) audio/sounds.s
+
+tools:
+	echo foobar
 
 clean:
 	-rm $(OBJS) $(CHR:.png=.chr) $(CHR:.png=.lz4)
 	-rm map/splash.bin map/splash.lz4
 	-rm $(SONGS:.txt=.s)
-	-rm px-tools
-	make -C $(PX_TOOLS_PATH) clean
-	make -C $(PX_LIB_PATH) clean
-	-rm ft5-tools
-	make -C $(FT5_TOOLS_PATH) clean
-
 .phony: default rom tiles clean
