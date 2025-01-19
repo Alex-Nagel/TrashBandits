@@ -1,9 +1,11 @@
 PROJECT_NAME = GGJ2X
 ROM = $(PROJECT_NAME).nes
 
-CC = tools/cc65/bin/cc65
-AS = tools/cc65/bin/ca65
-LD = tools/cc65/bin/ld65
+# CC65_ROOT = $(shell echo %CD%)/tools/cc65
+CC65_ROOT = $(shell pwd)/tools/cc65
+CC = $(CC65_ROOT)/bin/cc65
+AS = $(CC65_ROOT)/bin/ca65
+LD = $(CC65_ROOT)/bin/ld65
 
 C65FLAGS += \
 	-t nes -Oirs \
@@ -38,7 +40,7 @@ rom: $(ROM)
 PX_LIB_PATH = ext/pixler/lib
 PX_LIB = $(PX_LIB_PATH)/px.lib
 $(PX_LIB):
-	make CC65_ROOT=tools/cc65 -C $(PX_LIB_PATH)
+	make CC65_ROOT=$(CC65_ROOT) -C $(PX_LIB_PATH)
 
 run-mac: rom
 	open -a Nestopia $(ROM)
@@ -48,7 +50,7 @@ run-linux: rom
 #	nestopia -w -l 1 -n -s 2 -t $(ROM)
 
 run-win: rom
-	../Mesen/Mesen.exe $(ROM)
+	wintools/Mesen.exe $(ROM)
 
 $(ROM): ld65.cfg $(OBJS) $(PX_LIB)
 	$(LD) -C ld65.cfg --dbgfile $(ROM:.nes=.dbg) $(OBJS) $(PX_LIB) nes.lib -m link.log -o $@
@@ -57,7 +59,7 @@ $(ROM): ld65.cfg $(OBJS) $(PX_LIB)
 	$(CC) -g $(C65FLAGS) $< --add-source $(INCLUDE) -o $@
 
 %.s %.o: %.c
-	tools/cc65/bin/cl65 -c -g $(C65FLAGS) $(INCLUDE) $< -o $@
+	$(CC65_ROOT)/bin/cl65 -c -g $(C65FLAGS) $(INCLUDE) $< -o $@
 
 %.o: %.s
 	$(AS) -g $< $(ASMINC) -o $@
@@ -94,7 +96,7 @@ tools:
 	echo foobar
 
 clean:
-	-rm $(OBJS) $(CHR:.png=.chr) $(CHR:.png=.lz4)
+	-rm $(ROM) $(OBJS) $(CHR:.png=.chr) $(CHR:.png=.lz4)
 	-rm map/splash.bin map/splash.lz4
 	-rm $(SONGS:.txt=.s)
 .phony: default rom tiles clean
