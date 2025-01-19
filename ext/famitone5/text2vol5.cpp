@@ -477,7 +477,7 @@ void parse_error_ptn(int song, int pos, int row, int chn, const char* str)
 {
 	printf("Parsing error (song:%2.2i pos:%2.2x row:%2.2x chn %i): %s\n", song + 1, pos, row, chn, str);
 
-	exit(1);
+//	exit(1);
 }
 
 
