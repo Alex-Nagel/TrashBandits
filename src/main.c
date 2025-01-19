@@ -118,8 +118,9 @@ void main(void){
 	// Decompress the tileset into character memory.
 	px_lz4_to_vram(CHR_ADDR(0, 0), CHR0);
 	
-	sound_init(&SOUNDS);
 	music_init(&MUSIC);
+	sound_init(&SOUNDS);
+	music_play(0);
 	
 	// Jump to the splash screen state.
 	splash_screen();

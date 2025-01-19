@@ -21,7 +21,7 @@ ASM = \
 	src/data.s \
 	src/misc.s \
 	audio/audio.s \
-	ext/famitone2/famitone2.s \
+	ext/famitone5/famitone5.s \
 
 OBJS = \
 	$(SRC:.c=.o) \
@@ -46,10 +46,10 @@ px-tools:
 	make -C $(PX_TOOLS_PATH)
 	touch px-tools
 
-FT2_TOOLS_PATH = ext/famitone2
-ft2-tools:
-	make -C $(FT2_TOOLS_PATH)
-	touch ft2-tools
+FT5_TOOLS_PATH = ext/famitone5
+ft5-tools:
+	make -C $(FT5_TOOLS_PATH)
+	touch ft5-tools
 
 run-mac: rom
 	open -a Nestopia $(ROM)
@@ -93,11 +93,11 @@ tiles: chr/0.chr
 	$(PX_TOOLS_PATH)/chr2png "1D 09 19 29" chr/0.chr chr/0-pal2.png
 	$(PX_TOOLS_PATH)/chr2png "1D 01 11 21" chr/0.chr chr/0-pal3.png
 
-audio/sounds.s: audio/sounds.nsf ft2-tools
-	$(FT2_TOOLS_PATH)/nsf2data $< -ca65 -ntsc
+audio/sounds.s: audio/sounds.nsf ft5-tools
+	$(FT5_TOOLS_PATH)/nsf2data5 $< -ca65 -ntsc
 
-audio/%.s: audio/%.txt ft2-tools
-	$(FT2_TOOLS_PATH)/text2data -ca65 $<
+audio/%.s: audio/%.txt ft5-tools
+	$(FT5_TOOLS_PATH)/text2vol5 -ca65 $<
 
 audio/audio.o: $(SONGS:.txt=.s) audio/sounds.s
 
@@ -108,7 +108,7 @@ clean:
 	-rm px-tools
 	make -C $(PX_TOOLS_PATH) clean
 	make -C $(PX_LIB_PATH) clean
-	-rm ft2-tools
-	make -C $(FT2_TOOLS_PATH) clean
+	-rm ft5-tools
+	make -C $(FT5_TOOLS_PATH) clean
 
 .phony: default rom tiles clean

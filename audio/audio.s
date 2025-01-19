@@ -2,8 +2,8 @@
 .import FamiToneSfxInit
 .import FamiToneUpdate
 .import FamiToneMusicPlay
-.import FamiToneMusicPause
-.import FamiToneMusicStop
+;.import FamiToneMusicPause
+;.import FamiToneMusicStop
 .import FamiToneSfxPlay
 
 ; .code
@@ -36,8 +36,8 @@
 .endproc
 
 .export _music_play = FamiToneMusicPlay
-.export _music_pause = FamiToneMusicPause
-.export _music_stop = FamiToneMusicStop
+;.export _music_pause = FamiToneMusicPause
+;.export _music_stop = FamiToneMusicStop
 .export _sound_play = FamiToneSfxPlay
 
 .export _px_nmi_callback = FamiToneUpdate
