@@ -1,8 +1,7 @@
 PROJECT_NAME = GGJ2X
 ROM = $(PROJECT_NAME).nes
 
-# CC65_ROOT = $(shell echo %CD%)/tools/cc65
-CC65_ROOT = $(shell pwd)/tools/cc65
+CC65_ROOT = $(realpath tools/cc65)
 CC = $(CC65_ROOT)/bin/cc65
 AS = $(CC65_ROOT)/bin/ca65
 LD = $(CC65_ROOT)/bin/ld65
@@ -40,7 +39,7 @@ rom: $(ROM)
 PX_LIB_PATH = ext/pixler/lib
 PX_LIB = $(PX_LIB_PATH)/px.lib
 $(PX_LIB):
-	make CC65_ROOT=$(CC65_ROOT) -C $(PX_LIB_PATH)
+	$(MAKE) CC65_ROOT=$(CC65_ROOT) -C $(PX_LIB_PATH)
 
 run-mac: rom
 	open -a Nestopia $(ROM)
@@ -99,4 +98,6 @@ clean:
 	-rm $(ROM) $(OBJS) $(CHR:.png=.chr) $(CHR:.png=.lz4)
 	-rm map/splash.bin map/splash.lz4
 	-rm $(SONGS:.txt=.s)
+	-rm $(ROM:.nes=.dbg) link.log
+	$(MAKE) -C $(PX_LIB_PATH) clean
 .phony: default rom tiles clean
