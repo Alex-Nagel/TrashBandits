@@ -518,6 +518,8 @@ void parse_instruments(void)
 	//parse envelopes
 
 	off = text_find_tag("# Macros", 0);
+	// Dn Famitracker changed the comment line
+	if(off == -1) off = text_find_tag("# SEQUENCES", 0);
 
 	if (off < 0) parse_error(off, "Macros section not found");
 
@@ -586,6 +588,8 @@ void parse_instruments(void)
 	for (i = 0; i < MAX_INSTRUMENTS; ++i) sample_list[i].id = -1;
 
 	off = text_find_tag("# Instruments", off);
+	// Dn Famitracker changed the comment line
+	if(off == -1) off = text_find_tag("# INSTRUMENTS", 0);
 
 	if (off < 0) parse_error(off, "Instruments section not found");
 
