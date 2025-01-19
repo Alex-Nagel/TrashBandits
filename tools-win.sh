@@ -3,7 +3,7 @@ set -ex
 mkdir -p tools
 cd tools
 
-export CC=gcc
+export CC=x86_64-w64-mingw32-gcc
 VPATH=../ext/pixler/tools make -j -f ../ext/pixler/tools/Makefile
 VPATH=../ext/famitone5 make -j -f ../ext/famitone5/Makefile
 
