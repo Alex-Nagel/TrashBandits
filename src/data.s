@@ -5,7 +5,7 @@
 		.word 0 ; terminator
 .endmacro
 
-.rodata
+.segment "PRG0"
 
 inclz4 _CHR0, "chr/0.lz4"
 inclz4 _MAP_SPLASH, "map/splash.lz4"

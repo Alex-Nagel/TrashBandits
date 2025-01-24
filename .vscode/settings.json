@@ -1,6 +1,6 @@
 {
 	"files.associations": {
-		"*.s": "mads",
+		"*.s": "ca65",
 		"*.inc": "mads",
 		"nes.h": "c",
 		"pixler.h": "c",

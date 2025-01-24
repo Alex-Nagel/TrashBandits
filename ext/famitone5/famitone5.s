@@ -12,7 +12,7 @@
 
 
 
-.export FamiToneInit, FamiToneMusicPlay, FamiToneUpdate
+.export FamiToneInit, FamiToneMusicPlay, FamiToneUpdate, FamiToneMusicPause, FamiToneMusicStop
 
 
 
