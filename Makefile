@@ -51,6 +51,13 @@ run-linux: rom
 run-win: rom
 	wintools/Mesen.exe $(ROM)
 
+BIN = $(ROM:.nes=.bin)
+$(BIN): $(ROM)
+	dd if=$< ibs=1 skip=16 > $@	
+
+romviz.png: $(BIN)
+	tools/chr2png "1D 16 1A 11" $(BIN) $@
+
 $(ROM): ld65.cfg $(OBJS) $(PX_LIB)
 	$(LD) -C ld65.cfg --dbgfile $(ROM:.nes=.dbg) $(OBJS) $(PX_LIB) nes.lib -m link.log -o $@
 
@@ -68,12 +75,14 @@ $(ROM): ld65.cfg $(OBJS) $(PX_LIB)
 
 %.lz4: %.chr
 	tools/lz4x -f9 $< $@
+	touch $@ # dunno why lz4x doesn't update timestamps
 
 %.bin: %.tmx
 	python ext/pixler/tools/tmx2bin.py $< $@
 
 %.lz4: %.bin
 	tools/lz4x -f9 $< $@
+	touch $@ # dunno why lz4x doesn't update timestamps
 
 src/data.o: $(CHR:.png=.lz4) map/splash.lz4
 
