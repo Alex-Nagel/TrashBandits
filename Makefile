@@ -104,9 +104,10 @@ tools:
 	echo foobar
 
 clean:
-	-rm $(ROM) $(OBJS) $(CHR:.png=.chr) $(CHR:.png=.lz4)
+	-rm $(ROM) $(BIN) $(OBJS) $(CHR:.png=.chr) $(CHR:.png=.lz4)
 	-rm map/splash.bin map/splash.lz4
 	-rm $(SONGS:.txt=.s)
 	-rm $(ROM:.nes=.dbg) link.log
+	-rm romviz.png
 	$(MAKE) -C $(PX_LIB_PATH) clean
 .phony: default rom tiles clean
