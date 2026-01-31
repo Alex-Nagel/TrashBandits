@@ -134,10 +134,10 @@ static void draw_arena(){
 }
 
 static const u8 PLAYER_LEFT_META[] = {
-	 0, -8, 0xD8, 0 | PX_SPR_FLIPX,
-	-8, -8, 0xD9, 0 | PX_SPR_FLIPX,
-	 0,  0, 0xEA, 0 | PX_SPR_FLIPX,
-	-8,  0, 0xEB, 0 | PX_SPR_FLIPX,
+	 0, -8, 0x27, 0,
+	-8, -8, 0x26, 0,
+	 0,  0, 0x37, 0,
+	-8,  0, 0x36, 0,
 	128,
 };
 
@@ -297,10 +297,6 @@ void main(void){
 	// Set up CC65 joystick driver.
 	joy_install(nes_stdjoy_joy);
 	
-	// Set which tiles to use for the background and sprites.
-	px_bg_table(0);
-	px_spr_table(0);
-	
 	// Not using bank switching, but a good idea to set a reliable value at boot.
 	px_uxrom_select(0);
 	
@@ -310,6 +306,11 @@ void main(void){
 	
 	// Decompress the tileset into character memory.
 	px_lz4_to_vram(CHR_ADDR(0, 0), CHR0);
+	px_lz4_to_vram(CHR_ADDR(1, 0), SPRITES);
+	
+	// Set which tiles to use for the background and sprites.
+	px_bg_table(0);
+	px_spr_table(1);
 	
 	music_init(&MUSIC);
 	sound_init(&SOUNDS);
