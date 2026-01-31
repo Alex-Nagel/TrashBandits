@@ -17,6 +17,15 @@ static const u8 PALETTE[] = {
 	BG_COLOR, 0x01, 0x11, 0x21,
 };
 
+#define DIR_LEFT 0
+#define DIR_RIGHT 1
+#define DIR_DOWN 2
+#define DIR_UP 3
+
+#define HALF_PLAYER_SIZE 8
+#define SCREEN_RES_X 256
+#define SCREEN_RES_Y 240
+
 Gamepad pad1, pad2;
 
 void read_gamepads(void){
@@ -57,7 +66,24 @@ void fade_from_black(const u8* palette, u8 delay){
 }
 
 void meta_spr(u8 x, u8 y, u8 pal, const u8* data);
-static const u8 META[] = {
+
+static const u8 PLAYER_LEFT_META[] = {
+	 0, -8, 0xD8, 0 | PX_SPR_FLIPX,
+	-8, -8, 0xD9, 0 | PX_SPR_FLIPX,
+	 0,  0, 0xEA, 0 | PX_SPR_FLIPX,
+	-8,  0, 0xEB, 0 | PX_SPR_FLIPX,
+	128,
+};
+
+static const u8 PLAYER_RIGHT_META[] = {
+	-8, -8, 0xD8, 0,
+	 0, -8, 0xD9, 0,
+	-8,  0, 0xEA, 0,
+	 0,  0, 0xEB, 0,
+	128,
+};
+
+static const u8 PLAYER_DOWN_META[] = {
 	-8, -8, 0xD0, 0,
 	 0, -8, 0xD1, 0,
 	-8,  0, 0xD2, 0,
@@ -92,9 +118,60 @@ static void update_arena(void){
 	drop_trash(8, 5, item4, 0);
 }
 
-static void splash_screen(void){
-	register u8 x = 32, y = 32;
+static const u8 PLAYER_UP_META[] = {
+	-8, -8, 0xC4, 0,
+	 0, -8, 0xC5, 0,
+	-8,  0, 0xC6, 0,
+	 0,  0, 0xC7, 0,
+	128,
+};
+
+
+static const u8* PLAYER_ANIM_1[] = {
+	PLAYER_LEFT_META,
+	PLAYER_RIGHT_META,
+	PLAYER_DOWN_META,
+	PLAYER_UP_META,
+};
+
+struct Player {
+	u8 x;
+	u8 y;
+	u8 player_direction;
+};
+
+struct Player player1;
+struct Player player2;
+
+bool player_direction_left = false;
+
+static void update_player_movement(){
+	if(JOY_LEFT (pad1.value)) { player1.x -= 1; player1.player_direction = DIR_LEFT; }
+	if(JOY_RIGHT(pad1.value)) { player1.x += 1; player1.player_direction = DIR_RIGHT; }
+	if(JOY_DOWN (pad1.value)) { player1.y += 1; player1.player_direction = DIR_DOWN; }
+	if(JOY_UP   (pad1.value)) { player1.y -= 1; player1.player_direction = DIR_UP; }
+
+	// Clamp player movement never goes oob
+	if (player1.x < HALF_PLAYER_SIZE) { player1.x = HALF_PLAYER_SIZE; }
+	if (player1.y < HALF_PLAYER_SIZE) { player1.y = HALF_PLAYER_SIZE; }
 	
+	if (player1.x > SCREEN_RES_X - HALF_PLAYER_SIZE) { player1.x = SCREEN_RES_X - HALF_PLAYER_SIZE; }
+	if (player1.y > SCREEN_RES_Y - HALF_PLAYER_SIZE) { player1.y = SCREEN_RES_Y - HALF_PLAYER_SIZE; }
+	
+	if(JOY_LEFT (pad2.value)) { player2.x -= 1; player2.player_direction = DIR_LEFT; }
+	if(JOY_RIGHT(pad2.value)) { player2.x += 1; player2.player_direction = DIR_RIGHT; }
+	if(JOY_DOWN (pad2.value)) { player2.y += 1; player2.player_direction = DIR_DOWN; }
+	if(JOY_UP   (pad2.value)) { player2.y -= 1; player2.player_direction = DIR_UP; }
+	
+	// Clamp player movement never goes oob
+	if (player2.x < HALF_PLAYER_SIZE) { player2.x = HALF_PLAYER_SIZE; }
+	if (player2.y < HALF_PLAYER_SIZE) { player2.y = HALF_PLAYER_SIZE; }
+
+	if (player2.x > SCREEN_RES_X - HALF_PLAYER_SIZE) { player2.x = SCREEN_RES_X - HALF_PLAYER_SIZE; }
+	if (player2.y > SCREEN_RES_Y - HALF_PLAYER_SIZE) { player2.y = SCREEN_RES_Y - HALF_PLAYER_SIZE; }
+}
+
+static void splash_screen(void){
 	px_ppu_sync_disable();{
 		// Load the splash tilemap into nametable 0.
 		px_lz4_to_vram(NT_ADDR(0, 0, 0), MAP_SPLASH);
@@ -103,19 +180,28 @@ static void splash_screen(void){
 	// music_play(0);
 	
 	fade_from_black(PALETTE, 4);
+
+	// Set initial player positions. Might want to change later
+	player1.x = 64;
+	player1.y = 120;
+	player1.player_direction = DIR_RIGHT;
+	
+	player2.x = SCREEN_RES_X - 64;
+	player2.y = 120;
+	player2.player_direction = DIR_LEFT;
 	
 	while(true){
 		update_arena();
 		
 		read_gamepads();
-		if(JOY_LEFT (pad1.value)) x -= 1;
-		if(JOY_RIGHT(pad1.value)) x += 1;
-		if(JOY_DOWN (pad1.value)) y += 1;
-		if(JOY_UP   (pad1.value)) y -= 1;
-		if(JOY_BTN_A(pad1.press)) sound_play(SOUND_JUMP);
+		update_player_movement();
 		
-		// Draw a sprite.
-		meta_spr(x, y, 2, META);
+		// Draw player sprites
+		meta_spr(player1.x, player1.y, 2, PLAYER_ANIM_1[player1.player_direction]);
+		meta_spr(player2.x, player2.y, 2, PLAYER_ANIM_1[player2.player_direction]);
+
+		// meta_spr(player1.x, player1.y, 2, (animation_FLIP : animation)[(px_ticks / 8) % 2]);
+		// meta_spr(player2.x, player2.y, 2, (player_direction_left ? animation_FLIP : animation)[(px_ticks / 8) % 2]);
 		
 		px_spr_end();
 		px_wait_nmi();
