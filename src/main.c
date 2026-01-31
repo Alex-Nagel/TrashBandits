@@ -141,18 +141,39 @@ struct Player {
 	u8 x;
 	u8 y;
 	u8 player_direction;
+
+	int score1;
+	int score2;
+	int score3;
+	int score4;
 };
 
 struct Player player1;
 struct Player player2;
 
-bool player_direction_left = false;
+static void add_score_player1(u8 score_increase){
+	player1.score1 += score_increase;
+	while (player1.score1 > 9) { player1.score1 -= 10; player1.score2 += 1; }
+	while (player1.score2 > 9) { player1.score2 -= 10; player1.score3 += 1; }
+	while (player1.score3 > 9) { player1.score3 -= 10; player1.score4 += 1; }
+	while (player1.score4 > 9) { player1.score4 -= 10; }
+}
+
+static void add_score_player2(u8 score_increase){
+	player2.score1 += score_increase;
+	while (player2.score1 > 9) { player2.score1 -= 10; player2.score2 += 1; }
+	while (player2.score2 > 9) { player2.score2 -= 10; player2.score3 += 1; }
+	while (player2.score3 > 9) { player2.score3 -= 10; player2.score4 += 1; }
+	while (player2.score4 > 9) { player2.score4 -= 10; }
+}
+
 
 static void update_player_movement(){
 	if(JOY_LEFT (pad1.value)) { player1.x -= 1; player1.player_direction = DIR_LEFT; }
 	if(JOY_RIGHT(pad1.value)) { player1.x += 1; player1.player_direction = DIR_RIGHT; }
 	if(JOY_DOWN (pad1.value)) { player1.y += 1; player1.player_direction = DIR_DOWN; }
 	if(JOY_UP   (pad1.value)) { player1.y -= 1; player1.player_direction = DIR_UP; }
+	if(JOY_BTN_A(pad1.value)) { add_score_player1(1); } // TODO Delete, right now just a test for score
 
 	// Clamp player movement never goes oob
 	if (player1.x < HALF_PLAYER_SIZE) { player1.x = HALF_PLAYER_SIZE; }
@@ -165,6 +186,7 @@ static void update_player_movement(){
 	if(JOY_RIGHT(pad2.value)) { player2.x += 1; player2.player_direction = DIR_RIGHT; }
 	if(JOY_DOWN (pad2.value)) { player2.y += 1; player2.player_direction = DIR_DOWN; }
 	if(JOY_UP   (pad2.value)) { player2.y -= 1; player2.player_direction = DIR_UP; }
+	if(JOY_BTN_A(pad2.value)) { add_score_player2(1); } // TODO Delete, right now just a test for score
 	
 	// Clamp player movement never goes oob
 	if (player2.x < HALF_PLAYER_SIZE) { player2.x = HALF_PLAYER_SIZE; }
@@ -174,14 +196,22 @@ static void update_player_movement(){
 	if (player2.y > SCREEN_RES_Y - HALF_PLAYER_SIZE) { player2.y = SCREEN_RES_Y - HALF_PLAYER_SIZE; }
 }
 
+static void draw_score_labels(){
+	char buffer[7];
+	
+	sprintf(buffer, "%d%d%d%d00", player1.score4, player1.score3, player1.score2, player1.score1);
+	px_buffer_blit(NT_ADDR(0, 2, 27), buffer, strlen(buffer));
+
+	sprintf(buffer, "%d%d%d%d00", player2.score4, player2.score3, player2.score2, player2.score1);
+	px_buffer_blit(NT_ADDR(0, 24, 27), buffer, strlen(buffer));
+}
+
 u8* minutes_timer;
 u8* seconds_timer;
 u8* frames_timer;
 
 static void update_game_timer(){
-	char buffer[10];
-	// u8 visible_minutes;
-	// u8 visible_seconds;
+	char buffer[5];
 
 	frames_timer--;
 	if (frames_timer == 0){
@@ -222,10 +252,18 @@ static void splash_screen(void){
 	player1.x = 64;
 	player1.y = 120;
 	player1.player_direction = DIR_RIGHT;
+	player1.score1 = 0;
+	player1.score2 = 0;
+	player1.score3 = 0;
+	player1.score4 = 0;
 	
 	player2.x = SCREEN_RES_X - 64;
 	player2.y = 120;
 	player2.player_direction = DIR_LEFT;
+	player2.score1 = 0;
+	player2.score2 = 0;
+	player2.score3 = 0;
+	player2.score4 = 0;
 
 	// Length of a round, change if needed (Assumes that minutes are < 10 and seconds < 60)
 	minutes_timer = 2;
@@ -237,6 +275,8 @@ static void splash_screen(void){
 		
 		read_gamepads();
 		update_player_movement();
+		update_game_timer();
+		draw_score_labels();
 		
 		// Draw player sprites
 		meta_spr(player1.x, player1.y, 2, PLAYER_ANIM_1[player1.player_direction]);
@@ -244,7 +284,6 @@ static void splash_screen(void){
 
 		// meta_spr(player1.x, player1.y, 2, (animation_FLIP : animation)[(px_ticks / 8) % 2]);
 		// meta_spr(player2.x, player2.y, 2, (player_direction_left ? animation_FLIP : animation)[(px_ticks / 8) % 2]);
-		update_game_timer();
 
 		px_spr_end();
 		px_wait_nmi();
