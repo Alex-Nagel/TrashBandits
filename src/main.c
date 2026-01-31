@@ -58,12 +58,48 @@ void fade_from_black(const u8* palette, u8 delay){
 
 void meta_spr(u8 x, u8 y, u8 pal, const u8* data);
 static const u8 META[] = {
-	-8, -8, 0xD0, 0,
-	 0, -8, 0xD1, 0,
-	-8,  0, 0xD2, 0,
-	 0,  0, 0xD3, 0,
+	-8, -8, 0xD8, 0,
+	 0, -8, 0xD9, 0,
+	-8,  0, 0xEA, 0,
+	 0,  0, 0xEB, 0,
 	128,
 };
+
+static const u8 META2[] = {
+	-8, -8, 0xD8, 0,
+	 0, -8, 0xD9, 0,
+	-8,  0, 0xEE, 0,
+	 0,  0, 0xEF, 0,
+	128,
+};
+
+static const u8 META_FLIP[] = {
+	 0, -8, 0xD8, 0 | PX_SPR_FLIPX,
+	-8, -8, 0xD9, 0 | PX_SPR_FLIPX,
+	 0,  0, 0xEA, 0 | PX_SPR_FLIPX,
+	-8,  0, 0xEB, 0 | PX_SPR_FLIPX,
+	128,
+};
+
+static const u8 META2_FLIP[] = {
+	 0, -8, 0xD8, 0 | PX_SPR_FLIPX,
+	-8, -8, 0xD9, 0 | PX_SPR_FLIPX,
+	 0,  0, 0xEE, 0 | PX_SPR_FLIPX,
+	-8,  0, 0xEF, 0 | PX_SPR_FLIPX,
+	128,
+};
+
+static const u8* animation[] = {
+	META,
+	META2,
+};
+
+static const u8* animation_FLIP[] = {
+	META_FLIP,
+	META2_FLIP,
+};
+
+bool player_direction_left = false;
 
 static void splash_screen(void){
 	register u8 x = 32, y = 32;
@@ -80,14 +116,14 @@ static void splash_screen(void){
 	
 	while(true){
 		read_gamepads();
-		if(JOY_LEFT (pad1.value)) x -= 1;
-		if(JOY_RIGHT(pad1.value)) x += 1;
+		if(JOY_LEFT (pad1.value)) { x -= 1; player_direction_left = true; }
+		if(JOY_RIGHT(pad1.value)) { x += 1; player_direction_left = false; }
 		if(JOY_DOWN (pad1.value)) y += 1;
 		if(JOY_UP   (pad1.value)) y -= 1;
 		if(JOY_BTN_A(pad1.press)) sound_play(SOUND_JUMP);
 		
 		// Draw a sprite.
-		meta_spr(x, y, 2, META);
+		meta_spr(x, y, 2, (player_direction_left ? animation_FLIP : animation)[(px_ticks / 8) % 2]);
 		
 		PX.scroll_y = 480 + (sin >> 9);
 		sin += cos >> 6;
