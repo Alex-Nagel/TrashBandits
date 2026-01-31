@@ -29,6 +29,7 @@ OBJS = \
 
 CHR = \
 	chr/0.png \
+	chr/sprites.png \
 
 SONGS = \
 	audio/after_the_rain.txt \

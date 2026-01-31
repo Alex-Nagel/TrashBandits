@@ -5,7 +5,7 @@
 #include "pixler.h"
 #include "common.h"
 
-#define BG_COLOR 0x31
+#define BG_COLOR 0x17
 static const u8 PALETTE[] = {
 	BG_COLOR, 0x00, 0x10, 0x20,
 	BG_COLOR, 0x06, 0x16, 0x26,
@@ -14,7 +14,7 @@ static const u8 PALETTE[] = {
 	
 	BG_COLOR, 0x00, 0x10, 0x20,
 	BG_COLOR, 0x06, 0x16, 0x26,
-	BG_COLOR, 0x09, 0x19, 0x29,
+	BG_COLOR, 0x3D, 0x20, 0x1D,
 	BG_COLOR, 0x01, 0x11, 0x21,
 };
 
@@ -70,38 +70,72 @@ void fade_from_black(const u8* palette, u8 delay){
 
 void meta_spr(u8 x, u8 y, u8 pal, const u8* data);
 
-static const u8 PLAYER_LEFT_META[] = {
-	 0, -8, 0xD8, 0 | PX_SPR_FLIPX,
-	-8, -8, 0xD9, 0 | PX_SPR_FLIPX,
-	 0,  0, 0xEA, 0 | PX_SPR_FLIPX,
-	-8,  0, 0xEB, 0 | PX_SPR_FLIPX,
+static const u8 TRASH0_META[] = {
+	0, 0, 0x00, 0,
+	8, 0, 0x01, 0,
+	0, 8, 0x10, 0,
+	8, 8, 0x11, 0,
 	128,
 };
 
-static const u8 PLAYER_RIGHT_META[] = {
-	-8, -8, 0xD8, 0,
-	 0, -8, 0xD9, 0,
-	-8,  0, 0xEA, 0,
-	 0,  0, 0xEB, 0,
+static const u8 TRASH1_META[] = {
+	0, 0, 0x02, 0,
+	8, 0, 0x03, 0,
+	0, 8, 0x12, 0,
+	8, 8, 0x13, 0,
 	128,
 };
 
-static const u8 PLAYER_DOWN_META[] = {
-	-8, -8, 0xD0, 0,
-	 0, -8, 0xD1, 0,
-	-8,  0, 0xD2, 0,
-	 0,  0, 0xD3, 0,
+static const u8 TRASH2_META[] = {
+	0, 0, 0x04, 0,
+	8, 0, 0x05, 0,
+	0, 8, 0x14, 0,
+	8, 8, 0x15, 0,
 	128,
 };
 
-static void drop_trash(u8 x, u8 y, const u8* item, u8 pal){
-	// address of the top left corner of the block in the "nametable" (tilemap)
-	u16 addr = NT_ADDR(0, 2*x, 2*y);
-	// buffer some tile writes for the next vblank
-	px_buffer_blit(addr, item + 0, 2);
-	px_buffer_blit(addr + 32, item + 2, 2);
+static const u8 TRASH3_META[] = {
+	0, 0, 0x06, 0,
+	8, 0, 0x07, 0,
+	0, 8, 0x16, 0,
+	8, 8, 0x17, 0,
+	128,
+};
+
+static u8* TRASH_METAS[] = {
+	TRASH0_META,
+	TRASH1_META,
+	TRASH2_META,
+	TRASH3_META,
+};
+
+#define MAX_TRASH 10
+struct {
+	struct {
+		int count;
+		u8 type[MAX_TRASH];
+		u8 x[MAX_TRASH];
+		u8 y[MAX_TRASH];
+	} trash;
 	
-	// TODO set attr bit
+	// horizontal spans with trash in them
+	bool occupied[MAX_TRASH];
+} ARENA;
+
+static void drop_trash(u8 x, u8 y, u8 type){
+	idx = ARENA.trash.count;
+	ARENA.trash.x[idx] = 16*(x + (16 - 10)/2);
+	ARENA.trash.y[idx] = 16*(y + (15 - MAX_TRASH)/2);
+	ARENA.trash.type[idx] = type;
+	ARENA.trash.count++;
+	ARENA.occupied[y] = true;
+}
+
+static void init_arena(void){
+	u8 i;
+	for(i = 0; i < MAX_TRASH; i++){
+		drop_trash(rand()%10, i, i%4);
+	}
 }
 
 static void update_arena(void){
@@ -109,32 +143,120 @@ static void update_arena(void){
 	// TODO need timers for player goals
 	// TODO need timers for trash drops?
 	//   on a timer after player pickups?
-	
-	static u8 item1[] = {'A', 'A', 'A', 'A'};
-	static u8 item2[] = {'B', 'B', 'B', 'B'};
-	static u8 item3[] = {'C', 'C', 'C', 'C'};
-	static u8 item4[] = {'D', 'D', 'D', 'D'};
-	static u8 item5[] = {'E', 'E', 'E', 'E'};
-	drop_trash(5, 5, item1, 0);
-	drop_trash(6, 5, item2, 0);
-	drop_trash(7, 5, item3, 0);
-	drop_trash(8, 5, item4, 0);
 }
 
-static const u8 PLAYER_UP_META[] = {
-	-8, -8, 0xC4, 0,
-	 0, -8, 0xC5, 0,
-	-8,  0, 0xC6, 0,
-	 0,  0, 0xC7, 0,
+static void draw_arena(){
+	for(idx = 0; idx < ARENA.trash.count; idx++){
+		meta_spr(ARENA.trash.x[idx], ARENA.trash.y[idx], 0, TRASH_METAS[ARENA.trash.type[idx]]);
+	}
+}
+
+static const u8 PLAYER_LEFT0_META[] = {
+	-8, -8, 0x26, 0,
+	 0, -8, 0x27, 0,
+	-8,  0, 0x36, 0,
+	 0,  0, 0x37, 0,
 	128,
 };
 
+static const u8 PLAYER_LEFT1_META[] = {
+	-8, -8, 0x28, 0,
+	 0, -8, 0x29, 0,
+	-8,  0, 0x38, 0,
+	 0,  0, 0x39, 0,
+	128,
+};
 
-static const u8* PLAYER_ANIM_1[] = {
-	PLAYER_LEFT_META,
-	PLAYER_RIGHT_META,
-	PLAYER_DOWN_META,
-	PLAYER_UP_META,
+static const u8 PLAYER_LEFT2_META[] = {
+	-8, -8, 0x2A, 0,
+	 0, -8, 0x2B, 0,
+	-8,  0, 0x3A, 0,
+	 0,  0, 0x3B, 0,
+	128,
+};
+
+static const u8 PLAYER_RIGHT0_META[] = {
+	 0, -8, 0x26, PX_SPR_FLIPX,
+	-8, -8, 0x27, PX_SPR_FLIPX,
+	 0,  0, 0x36, PX_SPR_FLIPX,
+	-8,  0, 0x37, PX_SPR_FLIPX,
+	128,
+};
+
+static const u8 PLAYER_RIGHT1_META[] = {
+	 0, -8, 0x28, PX_SPR_FLIPX,
+	-8, -8, 0x29, PX_SPR_FLIPX,
+	 0,  0, 0x38, PX_SPR_FLIPX,
+	-8,  0, 0x39, PX_SPR_FLIPX,
+	128,
+};
+
+static const u8 PLAYER_RIGHT2_META[] = {
+	 0, -8, 0x2A, PX_SPR_FLIPX,
+	-8, -8, 0x2B, PX_SPR_FLIPX,
+	 0,  0, 0x3A, PX_SPR_FLIPX,
+	-8,  0, 0x3B, PX_SPR_FLIPX,
+	128,
+};
+
+static const u8 PLAYER_UP0_META[] = {
+	-8, -8, 0x46, 0,
+	 0, -8, 0x47, 0,
+	-8,  0, 0x56, 0,
+	 0,  0, 0x57, 0,
+	128,
+};
+
+static const u8 PLAYER_UP1_META[] = {
+	-8, -8, 0x48, 0,
+	 0, -8, 0x49, 0,
+	-8,  0, 0x58, 0,
+	 0,  0, 0x59, 0,
+	128,
+};
+
+static const u8 PLAYER_UP2_META[] = {
+	-8, -8, 0x4A, 0,
+	 0, -8, 0x4B, 0,
+	-8,  0, 0x5A, 0,
+	 0,  0, 0x5B, 0,
+	128,
+};
+
+static const u8 PLAYER_DOWN0_META[] = {
+	-8, -8, 0x66, 0,
+	 0, -8, 0x67, 0,
+	-8,  0, 0x76, 0,
+	 0,  0, 0x77, 0,
+	128,
+};
+
+static const u8 PLAYER_DOWN1_META[] = {
+	-8, -8, 0x68, 0,
+	 0, -8, 0x69, 0,
+	-8,  0, 0x78, 0,
+	 0,  0, 0x79, 0,
+	128,
+};
+
+static const u8 PLAYER_DOWN2_META[] = {
+	-8, -8, 0x6A, 0,
+	 0, -8, 0x6B, 0,
+	-8,  0, 0x7A, 0,
+	 0,  0, 0x7B, 0,
+	128,
+};
+
+static const u8* PLAYER_LEFT_ANIM[] = {PLAYER_LEFT0_META, PLAYER_LEFT1_META, PLAYER_LEFT2_META};
+static const u8* PLAYER_RIGHT_ANIM[] = {PLAYER_RIGHT0_META, PLAYER_RIGHT1_META, PLAYER_RIGHT2_META};
+static const u8* PLAYER_DOWN_ANIM[] = {PLAYER_DOWN0_META, PLAYER_DOWN1_META, PLAYER_DOWN2_META};
+static const u8* PLAYER_UP_ANIM[] = {PLAYER_UP0_META, PLAYER_UP1_META, PLAYER_UP2_META};
+
+static const u8** PLAYER_ANIMS[] = {
+	PLAYER_LEFT_ANIM,
+	PLAYER_RIGHT_ANIM,
+	PLAYER_DOWN_ANIM,
+	PLAYER_UP_ANIM,
 };
 
 struct Player {
@@ -146,6 +268,7 @@ struct Player {
 	int score2;
 	int score3;
 	int score4;
+	u8 anim_ticks;
 };
 
 struct Player player1;
@@ -170,12 +293,21 @@ static void add_score_player2(u8 score_increase){
 }
 
 
+#define JOY_DPAD_MASK (JOY_UP_MASK | JOY_DOWN_MASK | JOY_LEFT_MASK | JOY_RIGHT_MASK)
+#define PLAYER_TICKS_PER_FRAME 4
+
 static void update_player_movement(){
 	if(JOY_LEFT (pad1.value)) { player1.x -= 1; player1.player_direction = DIR_LEFT; }
 	if(JOY_RIGHT(pad1.value)) { player1.x += 1; player1.player_direction = DIR_RIGHT; }
 	if(JOY_DOWN (pad1.value)) { player1.y += 1; player1.player_direction = DIR_DOWN; }
 	if(JOY_UP   (pad1.value)) { player1.y -= 1; player1.player_direction = DIR_UP; }
 	if(JOY_BTN_A(pad1.value)) { add_score_player1(1); } // TODO Delete, right now just a test for score
+	if(pad1.value & JOY_DPAD_MASK){
+		player1.anim_ticks++;
+		if(player1.anim_ticks/PLAYER_TICKS_PER_FRAME == 3) player1.anim_ticks = 0;
+	} else {
+		player1.anim_ticks = 0;
+	}
 
 	// Clamp player movement never goes oob
 	if (player1.x < HALF_PLAYER_SIZE) { player1.x = HALF_PLAYER_SIZE; }
@@ -216,7 +348,6 @@ u8* frames_timer;
 static bool update_game_timer(){
 	char buffer[5];
 
-	frames_timer--;
 	if (frames_timer == 0){
 		
 		if (seconds_timer == 0)
@@ -232,6 +363,7 @@ static bool update_game_timer(){
 		seconds_timer--;
 		frames_timer = FPS;
 	}
+	frames_timer--;
 
 	// Draw the timer
 	if (seconds_timer < 10) sprintf(buffer, "%d:0%d", minutes_timer, seconds_timer);
@@ -254,6 +386,8 @@ static void game_run(void){
 	// music_play(0);
 	
 	fade_from_black(PALETTE, 4);
+	
+	init_arena();
 
 	// Set initial player positions. Might want to change later
 	player1.x = 64;
@@ -286,12 +420,12 @@ static void game_run(void){
 		draw_score_labels();
 		
 		// Draw player sprites
-		meta_spr(player1.x, player1.y, 2, PLAYER_ANIM_1[player1.player_direction]);
-		meta_spr(player2.x, player2.y, 2, PLAYER_ANIM_1[player2.player_direction]);
 
-		// meta_spr(player1.x, player1.y, 2, (animation_FLIP : animation)[(px_ticks / 8) % 2]);
-		// meta_spr(player2.x, player2.y, 2, (player_direction_left ? animation_FLIP : animation)[(px_ticks / 8) % 2]);
-
+		meta_spr(player1.x, player1.y, 2, PLAYER_ANIMS[player1.player_direction][player1.anim_ticks/PLAYER_TICKS_PER_FRAME]);
+		meta_spr(player2.x, player2.y, 2, PLAYER_ANIMS[player2.player_direction][0]);
+		
+		draw_arena();
+		
 		px_spr_end();
 		px_wait_nmi();
 	}
@@ -370,10 +504,6 @@ void main(void){
 	// Set up CC65 joystick driver.
 	joy_install(nes_stdjoy_joy);
 	
-	// Set which tiles to use for the background and sprites.
-	px_bg_table(0);
-	px_spr_table(0);
-	
 	// Not using bank switching, but a good idea to set a reliable value at boot.
 	px_uxrom_select(0);
 	
@@ -383,10 +513,18 @@ void main(void){
 	
 	// Decompress the tileset into character memory.
 	px_lz4_to_vram(CHR_ADDR(0, 0), CHR0);
+	px_lz4_to_vram(CHR_ADDR(1, 0), SPRITES);
+	
+	// Set which tiles to use for the background and sprites.
+	px_bg_table(0);
+	px_spr_table(1);
 	
 	music_init(&MUSIC);
 	sound_init(&SOUNDS);
 	music_play(0);
+	
+	rand_seed = 0x7A3B;
+	px_debug_hex_addr = NT_ADDR(0, 3, 3);
 	
 	// Jump to the splash screen state.
 	game_run();
