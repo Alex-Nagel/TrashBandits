@@ -133,50 +133,119 @@ static void draw_arena(){
 	}
 }
 
-static const u8 PLAYER_LEFT_META[] = {
-	 0, -8, 0x27, 0,
+static const u8 PLAYER_LEFT0_META[] = {
 	-8, -8, 0x26, 0,
-	 0,  0, 0x37, 0,
+	 0, -8, 0x27, 0,
 	-8,  0, 0x36, 0,
+	 0,  0, 0x37, 0,
 	128,
 };
 
-static const u8 PLAYER_RIGHT_META[] = {
-	-8, -8, 0xD8, 0,
-	 0, -8, 0xD9, 0,
-	-8,  0, 0xEA, 0,
-	 0,  0, 0xEB, 0,
+static const u8 PLAYER_LEFT1_META[] = {
+	-8, -8, 0x28, 0,
+	 0, -8, 0x29, 0,
+	-8,  0, 0x38, 0,
+	 0,  0, 0x39, 0,
 	128,
 };
 
-static const u8 PLAYER_DOWN_META[] = {
-	-8, -8, 0xD0, 0,
-	 0, -8, 0xD1, 0,
-	-8,  0, 0xD2, 0,
-	 0,  0, 0xD3, 0,
+static const u8 PLAYER_LEFT2_META[] = {
+	-8, -8, 0x2A, 0,
+	 0, -8, 0x2B, 0,
+	-8,  0, 0x3A, 0,
+	 0,  0, 0x3B, 0,
 	128,
 };
 
-static const u8 PLAYER_UP_META[] = {
-	-8, -8, 0xC4, 0,
-	 0, -8, 0xC5, 0,
-	-8,  0, 0xC6, 0,
-	 0,  0, 0xC7, 0,
+static const u8 PLAYER_RIGHT0_META[] = {
+	 0, -8, 0x26, PX_SPR_FLIPX,
+	-8, -8, 0x27, PX_SPR_FLIPX,
+	 0,  0, 0x36, PX_SPR_FLIPX,
+	-8,  0, 0x37, PX_SPR_FLIPX,
 	128,
 };
 
+static const u8 PLAYER_RIGHT1_META[] = {
+	 0, -8, 0x28, PX_SPR_FLIPX,
+	-8, -8, 0x29, PX_SPR_FLIPX,
+	 0,  0, 0x38, PX_SPR_FLIPX,
+	-8,  0, 0x39, PX_SPR_FLIPX,
+	128,
+};
 
-static const u8* PLAYER_ANIM_1[] = {
-	PLAYER_LEFT_META,
-	PLAYER_RIGHT_META,
-	PLAYER_DOWN_META,
-	PLAYER_UP_META,
+static const u8 PLAYER_RIGHT2_META[] = {
+	 0, -8, 0x2A, PX_SPR_FLIPX,
+	-8, -8, 0x2B, PX_SPR_FLIPX,
+	 0,  0, 0x3A, PX_SPR_FLIPX,
+	-8,  0, 0x3B, PX_SPR_FLIPX,
+	128,
+};
+
+static const u8 PLAYER_UP0_META[] = {
+	-8, -8, 0x46, 0,
+	 0, -8, 0x47, 0,
+	-8,  0, 0x56, 0,
+	 0,  0, 0x57, 0,
+	128,
+};
+
+static const u8 PLAYER_UP1_META[] = {
+	-8, -8, 0x48, 0,
+	 0, -8, 0x49, 0,
+	-8,  0, 0x58, 0,
+	 0,  0, 0x59, 0,
+	128,
+};
+
+static const u8 PLAYER_UP2_META[] = {
+	-8, -8, 0x4A, 0,
+	 0, -8, 0x4B, 0,
+	-8,  0, 0x5A, 0,
+	 0,  0, 0x5B, 0,
+	128,
+};
+
+static const u8 PLAYER_DOWN0_META[] = {
+	-8, -8, 0x66, 0,
+	 0, -8, 0x67, 0,
+	-8,  0, 0x76, 0,
+	 0,  0, 0x77, 0,
+	128,
+};
+
+static const u8 PLAYER_DOWN1_META[] = {
+	-8, -8, 0x68, 0,
+	 0, -8, 0x69, 0,
+	-8,  0, 0x78, 0,
+	 0,  0, 0x79, 0,
+	128,
+};
+
+static const u8 PLAYER_DOWN2_META[] = {
+	-8, -8, 0x6A, 0,
+	 0, -8, 0x6B, 0,
+	-8,  0, 0x7A, 0,
+	 0,  0, 0x7B, 0,
+	128,
+};
+
+static const u8* PLAYER_LEFT_ANIM[] = {PLAYER_LEFT0_META, PLAYER_LEFT1_META, PLAYER_LEFT2_META};
+static const u8* PLAYER_RIGHT_ANIM[] = {PLAYER_RIGHT0_META, PLAYER_RIGHT1_META, PLAYER_RIGHT2_META};
+static const u8* PLAYER_DOWN_ANIM[] = {PLAYER_DOWN0_META, PLAYER_DOWN1_META, PLAYER_DOWN2_META};
+static const u8* PLAYER_UP_ANIM[] = {PLAYER_UP0_META, PLAYER_UP1_META, PLAYER_UP2_META};
+
+static const u8** PLAYER_ANIMS[] = {
+	PLAYER_LEFT_ANIM,
+	PLAYER_RIGHT_ANIM,
+	PLAYER_DOWN_ANIM,
+	PLAYER_UP_ANIM,
 };
 
 struct Player {
 	u8 x;
 	u8 y;
 	u8 player_direction;
+	u8 anim_ticks;
 };
 
 struct Player player1;
@@ -184,11 +253,20 @@ struct Player player2;
 
 bool player_direction_left = false;
 
+#define JOY_DPAD_MASK (JOY_UP_MASK | JOY_DOWN_MASK | JOY_LEFT_MASK | JOY_RIGHT_MASK)
+#define PLAYER_TICKS_PER_FRAME 4
+
 static void update_player_movement(){
 	if(JOY_LEFT (pad1.value)) { player1.x -= 1; player1.player_direction = DIR_LEFT; }
 	if(JOY_RIGHT(pad1.value)) { player1.x += 1; player1.player_direction = DIR_RIGHT; }
 	if(JOY_DOWN (pad1.value)) { player1.y += 1; player1.player_direction = DIR_DOWN; }
 	if(JOY_UP   (pad1.value)) { player1.y -= 1; player1.player_direction = DIR_UP; }
+	if(pad1.value & JOY_DPAD_MASK){
+		player1.anim_ticks++;
+		if(player1.anim_ticks/PLAYER_TICKS_PER_FRAME == 3) player1.anim_ticks = 0;
+	} else {
+		player1.anim_ticks = 0;
+	}
 
 	// Clamp player movement never goes oob
 	if (player1.x < HALF_PLAYER_SIZE) { player1.x = HALF_PLAYER_SIZE; }
@@ -277,11 +355,8 @@ static void splash_screen(void){
 		update_player_movement();
 		
 		// Draw player sprites
-		meta_spr(player1.x, player1.y, 2, PLAYER_ANIM_1[player1.player_direction]);
-		meta_spr(player2.x, player2.y, 2, PLAYER_ANIM_1[player2.player_direction]);
-
-		// meta_spr(player1.x, player1.y, 2, (animation_FLIP : animation)[(px_ticks / 8) % 2]);
-		// meta_spr(player2.x, player2.y, 2, (player_direction_left ? animation_FLIP : animation)[(px_ticks / 8) % 2]);
+		meta_spr(player1.x, player1.y, 2, PLAYER_ANIMS[player1.player_direction][player1.anim_ticks/PLAYER_TICKS_PER_FRAME]);
+		meta_spr(player2.x, player2.y, 2, PLAYER_ANIMS[player2.player_direction][0]);
 		
 		update_game_timer();
 		draw_arena();
