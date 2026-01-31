@@ -65,9 +65,35 @@ static const u8 META[] = {
 	128,
 };
 
+static void drop_trash(u8 x, u8 y, const u8* item, u8 pal){
+	// address of the top left corner of the block in the "nametable" (tilemap)
+	u16 addr = NT_ADDR(0, 2*x, 2*y);
+	// buffer some tile writes for the next vblank
+	px_buffer_blit(addr, item + 0, 2);
+	px_buffer_blit(addr + 32, item + 2, 2);
+	
+	// TODO set attr bit
+}
+
+static void update_arena(void){
+	// TODO need initial trash
+	// TODO need timers for player goals
+	// TODO need timers for trash drops?
+	//   on a timer after player pickups?
+	
+	static u8 item1[] = {'A', 'A', 'A', 'A'};
+	static u8 item2[] = {'B', 'B', 'B', 'B'};
+	static u8 item3[] = {'C', 'C', 'C', 'C'};
+	static u8 item4[] = {'D', 'D', 'D', 'D'};
+	static u8 item5[] = {'E', 'E', 'E', 'E'};
+	drop_trash(5, 5, item1, 0);
+	drop_trash(6, 5, item2, 0);
+	drop_trash(7, 5, item3, 0);
+	drop_trash(8, 5, item4, 0);
+}
+
 static void splash_screen(void){
 	register u8 x = 32, y = 32;
-	register s16 sin = 0, cos = 0x3FFF;
 	
 	px_ppu_sync_disable();{
 		// Load the splash tilemap into nametable 0.
@@ -79,6 +105,8 @@ static void splash_screen(void){
 	fade_from_black(PALETTE, 4);
 	
 	while(true){
+		update_arena();
+		
 		read_gamepads();
 		if(JOY_LEFT (pad1.value)) x -= 1;
 		if(JOY_RIGHT(pad1.value)) x += 1;
@@ -88,10 +116,6 @@ static void splash_screen(void){
 		
 		// Draw a sprite.
 		meta_spr(x, y, 2, META);
-		
-		PX.scroll_y = 480 + (sin >> 9);
-		sin += cos >> 6;
-		cos -= sin >> 6;
 		
 		px_spr_end();
 		px_wait_nmi();
