@@ -1,5 +1,6 @@
 #include <stdlib.h>
 #include <string.h>
+#include <stdio.h>
 
 #include "pixler.h"
 #include "common.h"
@@ -25,6 +26,8 @@ static const u8 PALETTE[] = {
 #define HALF_PLAYER_SIZE 8
 #define SCREEN_RES_X 256
 #define SCREEN_RES_Y 240
+
+#define FPS 60
 
 Gamepad pad1, pad2;
 
@@ -207,6 +210,40 @@ static void update_player_movement(){
 	if (player2.y > SCREEN_RES_Y - HALF_PLAYER_SIZE) { player2.y = SCREEN_RES_Y - HALF_PLAYER_SIZE; }
 }
 
+u8* minutes_timer;
+u8* seconds_timer;
+u8* frames_timer;
+
+static void update_game_timer(){
+	char buffer[10];
+	// u8 visible_minutes;
+	// u8 visible_seconds;
+
+	frames_timer--;
+	if (frames_timer == 0){
+		
+		if (seconds_timer == 0)
+		{
+			if (minutes_timer == 0)
+			{
+				// TODO End the game and go to game over screen
+				return;
+			}
+			minutes_timer--;
+			seconds_timer = 60;
+		}
+
+		seconds_timer--;
+		frames_timer = FPS;
+	}
+
+	// Draw the timer
+	if (seconds_timer < 10) sprintf(buffer, "%d:0%d", minutes_timer, seconds_timer);
+	else 					sprintf(buffer, "%d:%d", minutes_timer, seconds_timer);
+	
+	px_buffer_blit(NT_ADDR(0, 14, 2), buffer, strlen(buffer));
+}
+
 static void splash_screen(void){
 	px_ppu_sync_disable();{
 		// Load the splash tilemap into nametable 0.
@@ -227,6 +264,11 @@ static void splash_screen(void){
 	player2.x = SCREEN_RES_X - 64;
 	player2.y = 120;
 	player2.player_direction = DIR_LEFT;
+
+	// Length of a round, change if needed (Assumes that minutes are < 10 and seconds < 60)
+	minutes_timer = 2;
+	seconds_timer = 30;
+	frames_timer = 60; // Keep this as 60
 	
 	while(true){
 		update_arena();
@@ -241,7 +283,9 @@ static void splash_screen(void){
 		// meta_spr(player1.x, player1.y, 2, (animation_FLIP : animation)[(px_ticks / 8) % 2]);
 		// meta_spr(player2.x, player2.y, 2, (player_direction_left ? animation_FLIP : animation)[(px_ticks / 8) % 2]);
 		
+		update_game_timer();
 		draw_arena();
+		
 		px_spr_end();
 		px_wait_nmi();
 	}
