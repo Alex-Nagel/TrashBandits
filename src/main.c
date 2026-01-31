@@ -151,6 +151,7 @@ struct Player {
 struct Player player1;
 struct Player player2;
 
+// Adding 1 point is equivalent to adding 100 points in the ui. Maximums in-game score: 999900
 static void add_score_player1(u8 score_increase){
 	player1.score1 += score_increase;
 	while (player1.score1 > 9) { player1.score1 -= 10; player1.score2 += 1; }
@@ -159,6 +160,7 @@ static void add_score_player1(u8 score_increase){
 	while (player1.score4 > 9) { player1.score4 -= 10; }
 }
 
+// Adding 1 point is equivalent to adding 100 points in the ui. Maximums in-game score: 999900
 static void add_score_player2(u8 score_increase){
 	player2.score1 += score_increase;
 	while (player2.score1 > 9) { player2.score1 -= 10; player2.score2 += 1; }
@@ -210,7 +212,8 @@ u8* minutes_timer;
 u8* seconds_timer;
 u8* frames_timer;
 
-static void update_game_timer(){
+// Returns true when game should continue, false when game is over
+static bool update_game_timer(){
 	char buffer[5];
 
 	frames_timer--;
@@ -220,8 +223,7 @@ static void update_game_timer(){
 		{
 			if (minutes_timer == 0)
 			{
-				// TODO End the game and go to game over screen
-				return;
+				return false;
 			}
 			minutes_timer--;
 			seconds_timer = 60;
@@ -236,9 +238,14 @@ static void update_game_timer(){
 	else 					sprintf(buffer, "%d:%d", minutes_timer, seconds_timer);
 	
 	px_buffer_blit(NT_ADDR(0, 14, 2), buffer, strlen(buffer));
+
+	return true;
 }
 
-static void splash_screen(void){
+
+static void game_over_screen();
+
+static void game_run(void){
 	px_ppu_sync_disable();{
 		// Load the splash tilemap into nametable 0.
 		px_lz4_to_vram(NT_ADDR(0, 0, 0), MAP_SPLASH);
@@ -275,7 +282,7 @@ static void splash_screen(void){
 		
 		read_gamepads();
 		update_player_movement();
-		update_game_timer();
+		if (!update_game_timer()) game_over_screen();
 		draw_score_labels();
 		
 		// Draw player sprites
@@ -289,7 +296,74 @@ static void splash_screen(void){
 		px_wait_nmi();
 	}
 	
-	splash_screen();
+	game_run();
+}
+
+// 0 is a tie, 1 is player 1, 2 is player 2
+static u8 get_winner(){
+	if (player1.score4 > player2.score4) return 1;
+	if (player1.score4 < player2.score4) return 2;
+	
+	if (player1.score3 > player2.score3) return 1;
+	if (player1.score3 < player2.score3) return 2;
+	
+	if (player1.score2 > player2.score2) return 1;
+	if (player1.score2 < player2.score2) return 2;
+	
+	if (player1.score1 > player2.score1) return 1;
+	if (player1.score1 < player2.score1) return 2;
+
+	return 0;
+}
+
+static void game_over_screen(){
+	char buffer[10];
+	u8 winner;
+
+	px_ppu_sync_disable();{
+		// Load the splash tilemap into nametable 0.
+		px_addr(NT_ADDR(0, 0, 0));
+		px_fill(1024, 0);
+	} px_ppu_sync_enable();
+
+	px_spr_clear();
+
+	while (true)
+	{
+		read_gamepads();
+		
+		if (JOY_START(pad1.value) || JOY_START(pad2.value)) {
+			game_run();
+		}
+
+		// Draw who winner is
+		winner = get_winner();
+		if (winner == 0)      sprintf(buffer, "Tie! Both Win!");
+		else if (winner == 1) sprintf(buffer, "Player 1 Wins!");
+		else if (winner == 2) sprintf(buffer, "Player 2 Wins!");
+		else                  sprintf(buffer, "ERROR! ? Wins!");
+		px_buffer_blit(NT_ADDR(0, 9, 6), buffer, strlen(buffer));
+		
+		// Draw player 1 score
+		sprintf(buffer, "Player 1:");
+		px_buffer_blit(NT_ADDR(0, 4, 14), buffer, strlen(buffer));
+		
+		sprintf(buffer, "%d%d%d%d00", player1.score4, player1.score3, player1.score2, player1.score1);
+		px_buffer_blit(NT_ADDR(0, 4, 16), buffer, strlen(buffer));
+		
+		// Draw player 2 score
+		sprintf(buffer, "Player 2:");
+		px_buffer_blit(NT_ADDR(0, 19, 14), buffer, strlen(buffer));
+
+		sprintf(buffer, "%d%d%d%d00", player2.score4, player2.score3, player2.score2, player2.score1);
+		px_buffer_blit(NT_ADDR(0, 22, 16), buffer, strlen(buffer));
+
+		// TODO Have some more stuff so not empty, maybe happy and sad raccoons for winner / loser
+		
+		px_spr_end();
+		px_wait_nmi();
+	}
+	
 }
 
 void main(void){
@@ -315,5 +389,5 @@ void main(void){
 	music_play(0);
 	
 	// Jump to the splash screen state.
-	splash_screen();
+	game_run();
 }
