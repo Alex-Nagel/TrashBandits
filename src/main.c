@@ -5,19 +5,6 @@
 #include "pixler.h"
 #include "common.h"
 
-#define BG_COLOR 0x17
-static const u8 PALETTE[] = {
-	BG_COLOR, 0x00, 0x10, 0x20,
-	BG_COLOR, 0x06, 0x16, 0x26,
-	BG_COLOR, 0x09, 0x19, 0x29,
-	BG_COLOR, 0x01, 0x11, 0x21,
-	
-	BG_COLOR, 0x00, 0x10, 0x20,
-	BG_COLOR, 0x06, 0x16, 0x26,
-	BG_COLOR, 0x3D, 0x20, 0x1D,
-	BG_COLOR, 0x01, 0x11, 0x21,
-};
-
 #define DIR_LEFT 0
 #define DIR_RIGHT 1
 #define DIR_DOWN 2
@@ -70,7 +57,7 @@ void fade_from_black(const u8* palette, u8 delay){
 
 void meta_spr(u8 x, u8 y, u8 pal, const u8* data);
 
-static const u8 TRASH0_META[] = {
+static const u8 TRASH_APPLE_META[] = {
 	0, 0, 0x00, 0,
 	8, 0, 0x01, 0,
 	0, 8, 0x10, 0,
@@ -78,7 +65,7 @@ static const u8 TRASH0_META[] = {
 	128,
 };
 
-static const u8 TRASH1_META[] = {
+static const u8 TRASH_BANANA_META[] = {
 	0, 0, 0x02, 0,
 	8, 0, 0x03, 0,
 	0, 8, 0x12, 0,
@@ -86,7 +73,7 @@ static const u8 TRASH1_META[] = {
 	128,
 };
 
-static const u8 TRASH2_META[] = {
+static const u8 TRASH_TIRE_META[] = {
 	0, 0, 0x04, 0,
 	8, 0, 0x05, 0,
 	0, 8, 0x14, 0,
@@ -94,7 +81,7 @@ static const u8 TRASH2_META[] = {
 	128,
 };
 
-static const u8 TRASH3_META[] = {
+static const u8 TRASH_FISH_META[] = {
 	0, 0, 0x06, 0,
 	8, 0, 0x07, 0,
 	0, 8, 0x16, 0,
@@ -103,11 +90,13 @@ static const u8 TRASH3_META[] = {
 };
 
 static u8* TRASH_METAS[] = {
-	TRASH0_META,
-	TRASH1_META,
-	TRASH2_META,
-	TRASH3_META,
+	TRASH_APPLE_META,
+	TRASH_BANANA_META,
+	TRASH_TIRE_META,
+	TRASH_FISH_META,
 };
+
+static u8 TRASH_PAL[] = {2, 1, 3, 2};
 
 #define MAX_TRASH 10
 struct {
@@ -147,7 +136,7 @@ static void update_arena(void){
 
 static void draw_arena(){
 	for(idx = 0; idx < ARENA.trash.count; idx++){
-		meta_spr(ARENA.trash.x[idx], ARENA.trash.y[idx], 0, TRASH_METAS[ARENA.trash.type[idx]]);
+		meta_spr(ARENA.trash.x[idx], ARENA.trash.y[idx], TRASH_PAL[ARENA.trash.type[idx]], TRASH_METAS[ARENA.trash.type[idx]]);
 	}
 }
 
@@ -343,12 +332,12 @@ static void update_game_timer(){
 static void splash_screen(void){
 	px_ppu_sync_disable();{
 		// Load the splash tilemap into nametable 0.
-		px_lz4_to_vram(NT_ADDR(0, 0, 0), MAP_SPLASH);
+		px_lz4_to_vram(NT_ADDR(0, 0, 0), MAP_DUMP);
 	} px_ppu_sync_enable();
 	
 	// music_play(0);
 	
-	fade_from_black(PALETTE, 4);
+	fade_from_black(PAL_DUMP, 4);
 	
 	init_arena();
 
@@ -373,8 +362,8 @@ static void splash_screen(void){
 		update_player_movement();
 		
 		// Draw player sprites
-		meta_spr(player1.x, player1.y, 2, PLAYER_ANIMS[player1.player_direction][player1.anim_ticks/PLAYER_TICKS_PER_FRAME]);
-		meta_spr(player2.x, player2.y, 2, PLAYER_ANIMS[player2.player_direction][0]);
+		meta_spr(player1.x, player1.y, 0, PLAYER_ANIMS[player1.player_direction][player1.anim_ticks/PLAYER_TICKS_PER_FRAME]);
+		meta_spr(player2.x, player2.y, 0, PLAYER_ANIMS[player2.player_direction][0]);
 		
 		update_game_timer();
 		draw_arena();
@@ -398,8 +387,8 @@ void main(void){
 	px_wait_nmi();
 	
 	// Decompress the tileset into character memory.
-	px_lz4_to_vram(CHR_ADDR(0, 0), CHR0);
-	px_lz4_to_vram(CHR_ADDR(1, 0), SPRITES);
+	px_lz4_to_vram(CHR_ADDR(0, 0), CHR_DUMP);
+	px_lz4_to_vram(CHR_ADDR(1, 0), CHR_SPRITES);
 	
 	// Set which tiles to use for the background and sprites.
 	px_bg_table(0);
