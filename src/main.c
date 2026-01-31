@@ -67,6 +67,69 @@ void fade_from_black(const u8* palette, u8 delay){
 
 void meta_spr(u8 x, u8 y, u8 pal, const u8* data);
 
+static const u8 TRASH0_META[] = {
+	0, 0, 0xC4, 0,
+	8, 0, 0xC5, 0,
+	0, 8, 0xC6, 0,
+	8, 8, 0xC7, 0,
+	128,
+};
+
+static const u8 TRASH1_META[] = {
+	0, 0, 0xC8, 0,
+	8, 0, 0xC9, 0,
+	0, 8, 0xCA, 0,
+	8, 8, 0xCB, 0,
+	128,
+};
+
+static u8* TRASH_METAS[] = {
+	TRASH0_META,
+	TRASH1_META,
+};
+
+#define MAX_TRASH 10
+struct {
+	struct {
+		int count;
+		u8 type[MAX_TRASH];
+		u8 x[MAX_TRASH];
+		u8 y[MAX_TRASH];
+	} trash;
+	
+	// horizontal spans with trash in them
+	bool occupied[MAX_TRASH];
+} ARENA;
+
+static void drop_trash(u8 x, u8 y, u8 type){
+	idx = ARENA.trash.count;
+	ARENA.trash.x[idx] = 16*(x + (16 - 10)/2);
+	ARENA.trash.y[idx] = 16*(y + (15 - MAX_TRASH)/2);
+	ARENA.trash.type[idx] = type;
+	ARENA.trash.count++;
+	ARENA.occupied[y] = true;
+}
+
+static void init_arena(void){
+	u8 i;
+	for(i = 0; i < MAX_TRASH; i++){
+		drop_trash(rand()%10, i, i&1);
+	}
+}
+
+static void update_arena(void){
+	// TODO need initial trash
+	// TODO need timers for player goals
+	// TODO need timers for trash drops?
+	//   on a timer after player pickups?
+}
+
+static void draw_arena(){
+	for(idx = 0; idx < ARENA.trash.count; idx++){
+		meta_spr(ARENA.trash.x[idx], ARENA.trash.y[idx], 0, TRASH_METAS[ARENA.trash.type[idx]]);
+	}
+}
+
 static const u8 PLAYER_LEFT_META[] = {
 	 0, -8, 0xD8, 0 | PX_SPR_FLIPX,
 	-8, -8, 0xD9, 0 | PX_SPR_FLIPX,
@@ -90,33 +153,6 @@ static const u8 PLAYER_DOWN_META[] = {
 	 0,  0, 0xD3, 0,
 	128,
 };
-
-static void drop_trash(u8 x, u8 y, const u8* item, u8 pal){
-	// address of the top left corner of the block in the "nametable" (tilemap)
-	u16 addr = NT_ADDR(0, 2*x, 2*y);
-	// buffer some tile writes for the next vblank
-	px_buffer_blit(addr, item + 0, 2);
-	px_buffer_blit(addr + 32, item + 2, 2);
-	
-	// TODO set attr bit
-}
-
-static void update_arena(void){
-	// TODO need initial trash
-	// TODO need timers for player goals
-	// TODO need timers for trash drops?
-	//   on a timer after player pickups?
-	
-	static u8 item1[] = {'A', 'A', 'A', 'A'};
-	static u8 item2[] = {'B', 'B', 'B', 'B'};
-	static u8 item3[] = {'C', 'C', 'C', 'C'};
-	static u8 item4[] = {'D', 'D', 'D', 'D'};
-	static u8 item5[] = {'E', 'E', 'E', 'E'};
-	drop_trash(5, 5, item1, 0);
-	drop_trash(6, 5, item2, 0);
-	drop_trash(7, 5, item3, 0);
-	drop_trash(8, 5, item4, 0);
-}
 
 static const u8 PLAYER_UP_META[] = {
 	-8, -8, 0xC4, 0,
@@ -180,6 +216,8 @@ static void splash_screen(void){
 	// music_play(0);
 	
 	fade_from_black(PALETTE, 4);
+	
+	init_arena();
 
 	// Set initial player positions. Might want to change later
 	player1.x = 64;
@@ -203,6 +241,7 @@ static void splash_screen(void){
 		// meta_spr(player1.x, player1.y, 2, (animation_FLIP : animation)[(px_ticks / 8) % 2]);
 		// meta_spr(player2.x, player2.y, 2, (player_direction_left ? animation_FLIP : animation)[(px_ticks / 8) % 2]);
 		
+		draw_arena();
 		px_spr_end();
 		px_wait_nmi();
 	}
@@ -231,6 +270,9 @@ void main(void){
 	music_init(&MUSIC);
 	sound_init(&SOUNDS);
 	music_play(0);
+	
+	rand_seed = 0x7A3B;
+	px_debug_hex_addr = NT_ADDR(0, 3, 3);
 	
 	// Jump to the splash screen state.
 	splash_screen();
