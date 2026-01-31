@@ -5,7 +5,7 @@
 #include "pixler.h"
 #include "common.h"
 
-#define BG_COLOR 0x31
+#define BG_COLOR 0x17
 static const u8 PALETTE[] = {
 	BG_COLOR, 0x00, 0x10, 0x20,
 	BG_COLOR, 0x06, 0x16, 0x26,
@@ -14,7 +14,7 @@ static const u8 PALETTE[] = {
 	
 	BG_COLOR, 0x00, 0x10, 0x20,
 	BG_COLOR, 0x06, 0x16, 0x26,
-	BG_COLOR, 0x09, 0x19, 0x29,
+	BG_COLOR, 0x3D, 0x20, 0x1D,
 	BG_COLOR, 0x01, 0x11, 0x21,
 };
 
@@ -71,24 +71,42 @@ void fade_from_black(const u8* palette, u8 delay){
 void meta_spr(u8 x, u8 y, u8 pal, const u8* data);
 
 static const u8 TRASH0_META[] = {
-	0, 0, 0xC4, 0,
-	8, 0, 0xC5, 0,
-	0, 8, 0xC6, 0,
-	8, 8, 0xC7, 0,
+	0, 0, 0x00, 0,
+	8, 0, 0x01, 0,
+	0, 8, 0x10, 0,
+	8, 8, 0x11, 0,
 	128,
 };
 
 static const u8 TRASH1_META[] = {
-	0, 0, 0xC8, 0,
-	8, 0, 0xC9, 0,
-	0, 8, 0xCA, 0,
-	8, 8, 0xCB, 0,
+	0, 0, 0x02, 0,
+	8, 0, 0x03, 0,
+	0, 8, 0x12, 0,
+	8, 8, 0x13, 0,
+	128,
+};
+
+static const u8 TRASH2_META[] = {
+	0, 0, 0x04, 0,
+	8, 0, 0x05, 0,
+	0, 8, 0x14, 0,
+	8, 8, 0x15, 0,
+	128,
+};
+
+static const u8 TRASH3_META[] = {
+	0, 0, 0x06, 0,
+	8, 0, 0x07, 0,
+	0, 8, 0x16, 0,
+	8, 8, 0x17, 0,
 	128,
 };
 
 static u8* TRASH_METAS[] = {
 	TRASH0_META,
 	TRASH1_META,
+	TRASH2_META,
+	TRASH3_META,
 };
 
 #define MAX_TRASH 10
@@ -116,7 +134,7 @@ static void drop_trash(u8 x, u8 y, u8 type){
 static void init_arena(void){
 	u8 i;
 	for(i = 0; i < MAX_TRASH; i++){
-		drop_trash(rand()%10, i, i&1);
+		drop_trash(rand()%10, i, i%4);
 	}
 }
 
