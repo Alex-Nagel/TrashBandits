@@ -9,15 +9,24 @@
 
 inclz4 _CHR0, "chr/0.lz4"
 inclz4 _CHR_IGDA, "chr/IGDA.lz4"
+inclz4 _CHR_TITLE, "chr/title.lz4"
 inclz4 _CHR_DUMP, "chr/dump.lz4"
 inclz4 _CHR_SPRITES, "chr/sprites.lz4"
 
 inclz4 _MAP_IGDA, "map/IGDA.lz4"
+inclz4 _MAP_TITLE, "map/title.lz4"
 inclz4 _MAP_DUMP, "map/dump.lz4"
 
 .export _PAL_IGDA
 _PAL_IGDA:
 	.incbin "chr/IGDA.pal"
+	; double it to fill the sprite palettes too
+	.incbin "chr/IGDA.pal"
+
+.export _PAL_TITLE
+_PAL_TITLE:
+	.incbin "chr/title.pal"
+	.incbin "chr/title.pal"
 
 .export _PAL_DUMP
 _PAL_DUMP:

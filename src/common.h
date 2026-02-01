@@ -4,14 +4,17 @@
 #include "pixler.h"
 
 // data.s declarations:
+extern u8 PAL_TITLE[];
 extern u8 PAL_IGDA[];
 extern u8 PAL_DUMP[];
 
-extern u8 CHR_IGDA[];
 extern u8 CHR0[];
+extern u8 CHR_TITLE[];
+extern u8 CHR_IGDA[];
 extern u8 CHR_DUMP[];
 extern u8 CHR_SPRITES[];
 
+extern u8 MAP_TITLE[];
 extern u8 MAP_IGDA[];
 extern u8 MAP_DUMP[];
 

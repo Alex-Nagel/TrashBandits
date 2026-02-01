@@ -60,6 +60,18 @@ void fade_from_black(const u8* palette, u8 delay){
 	darken(palette, 0);
 }
 
+void fade_to_black(const u8* palette, u8 delay){
+	darken(palette, 0);
+	px_wait_frames(delay);
+	darken(palette, 1);
+	px_wait_frames(delay);
+	darken(palette, 2);
+	px_wait_frames(delay);
+	darken(palette, 3);
+	px_wait_frames(delay);
+	darken(palette, 4);
+}
+
 void meta_spr(u8 x, u8 y, u8 pal, const u8* data);
 
 static const u8 TRASH_BAG0_META[] = {
@@ -731,11 +743,36 @@ static void game_over_screen(){
 	}
 }
 
+static void title_screen(){
+	px_ppu_sync_disable();{
+		// Decompress the tileset into character memory.
+		px_lz4_to_vram(CHR_ADDR(0, 0), CHR_TITLE);
+		// Set which tiles to use for the background and sprites.
+		px_bg_table(0);
+		px_spr_table(0);
+		
+		px_lz4_to_vram(NT_ADDR(0, 0, 0), MAP_TITLE);
+		PX.scroll_x = 0;
+	} px_ppu_sync_enable();
+
+	px_spr_clear();
+	
+	fade_from_black(PAL_TITLE, 4);
+	
+	while (true){
+		read_gamepads();
+		if (JOY_START(pad1.value) || JOY_START(pad2.value)) break;
+		
+		px_spr_end();
+		px_wait_nmi();
+	}
+	
+	fade_to_black(PAL_TITLE, 4);
+	game_run();
+}
+
 static void igda_screen(){
 	px_ppu_sync_disable();{
-		px_addr(PAL_ADDR);
-		px_blit(16, PAL_IGDA);
-		
 		// Decompress the tileset into character memory.
 		px_lz4_to_vram(CHR_ADDR(0, 0), CHR_IGDA);
 		// Set which tiles to use for the background and sprites.
@@ -748,15 +785,18 @@ static void igda_screen(){
 
 	px_spr_clear();
 	
+	fade_from_black(PAL_IGDA, 4);
+	
 	while (true){
 		read_gamepads();
-		if (JOY_START(pad1.value) || JOY_START(pad2.value)) {
-			game_run();
-		}
+		if (JOY_START(pad1.value) || JOY_START(pad2.value)) break;
 		
 		px_spr_end();
 		px_wait_nmi();
 	}
+	
+	fade_to_black(PAL_IGDA, 4);
+	title_screen();
 }
 
 void main(void){
