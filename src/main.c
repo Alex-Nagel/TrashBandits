@@ -405,6 +405,11 @@ static void add_score_player2(u8 score_increase){
 #define PLAYER_TICKS_PER_FRAME 8
 
 static void update_player_movement(){
+	u8 original_1x = player1.x;
+	u8 original_1y = player1.y;
+	u8 original_2x = player2.x;
+	u8 original_2y = player2.y;
+
 	if(JOY_LEFT (pad1.value)) { player1.x -= 1; player1.player_direction = DIR_LEFT; }
 	if(JOY_RIGHT(pad1.value)) { player1.x += 1; player1.player_direction = DIR_RIGHT; }
 	if(JOY_DOWN (pad1.value)) { player1.y += 1; player1.player_direction = DIR_DOWN; }
@@ -423,6 +428,18 @@ static void update_player_movement(){
 	
 	if (player1.x > SCREEN_RES_X - HALF_PLAYER_SIZE) { player1.x = SCREEN_RES_X - HALF_PLAYER_SIZE; }
 	if (player1.y > SCREEN_RES_Y - HALF_PLAYER_SIZE) { player1.y = SCREEN_RES_Y - HALF_PLAYER_SIZE; }
+
+	
+	// check for dumpster collision
+	if (player1.y < DUMPSTER_BOTTOM_BOUND + 8 && player1.y > DUMPSTER_TOP_BOUND + 16){
+		if (player1.x < DUMPSTER_1_RIGHT_BOUND + 8){
+			player1.x = original_1x;
+			player1.y = original_1y;
+		} else if (player1.x > DUMPSTER_2_LEFT_BOUND + 8){
+			player1.x = original_1x;
+			player1.y = original_1y;
+		}
+	}
 	
 	if (JOY_BTN_A(pad1.press) && player1.selected != ~0){
 		ARENA.trash.player[player1.selected] = 1;
@@ -446,7 +463,7 @@ static void update_player_movement(){
 		player2.anim_ticks++;
 		if(player2.anim_ticks/PLAYER_TICKS_PER_FRAME == 3) player2.anim_ticks = 0;
 	} else {
-		player2.anim_ticks = 0;
+		player2.anim_ticks = PLAYER_TICKS_PER_FRAME;
 	}
 	
 	// Clamp player movement never goes oob
@@ -455,6 +472,18 @@ static void update_player_movement(){
 
 	if (player2.x > SCREEN_RES_X - HALF_PLAYER_SIZE) { player2.x = SCREEN_RES_X - HALF_PLAYER_SIZE; }
 	if (player2.y > SCREEN_RES_Y - HALF_PLAYER_SIZE) { player2.y = SCREEN_RES_Y - HALF_PLAYER_SIZE; }
+
+	
+	// check for dumpster collision
+	if (player2.y < DUMPSTER_BOTTOM_BOUND + 8 && player2.y > DUMPSTER_TOP_BOUND + 16){
+		if (player2.x < DUMPSTER_1_RIGHT_BOUND + 8){
+			player2.x = original_2x;
+			player2.y = original_2y;
+		} else if (player2.x > DUMPSTER_2_LEFT_BOUND + 8){
+			player2.x = original_2x;
+			player2.y = original_2y;
+		}
+	}
 	
 	if (JOY_BTN_A(pad2.press) && player2.selected != ~0){
 		ARENA.trash.player[player2.selected] = 2;
@@ -589,7 +618,7 @@ static void game_run(void){
 	init_arena();
 
 	// Set initial player positions. Might want to change later
-	player1.x = 64;
+	player1.x = 80;
 	player1.y = 120;
 	player1.hands_free = true;
 	player1.player_direction = DIR_RIGHT;
@@ -598,7 +627,7 @@ static void game_run(void){
 	// triggers a redraw
 	add_score_player1(0);
 	
-	player2.x = SCREEN_RES_X - 64;
+	player2.x = SCREEN_RES_X - 80;
 	player2.y = 120;
 	player2.hands_free = true;
 	player2.player_direction = DIR_LEFT;
