@@ -252,13 +252,35 @@ struct Player {
 	u8 x;
 	u8 y;
 	u8 player_direction;
+
+	int score1;
+	int score2;
+	int score3;
+	int score4;
 	u8 anim_ticks;
 };
 
 struct Player player1;
 struct Player player2;
 
-bool player_direction_left = false;
+// Adding 1 point is equivalent to adding 100 points in the ui. Maximums in-game score: 999900
+static void add_score_player1(u8 score_increase){
+	player1.score1 += score_increase;
+	while (player1.score1 > 9) { player1.score1 -= 10; player1.score2 += 1; }
+	while (player1.score2 > 9) { player1.score2 -= 10; player1.score3 += 1; }
+	while (player1.score3 > 9) { player1.score3 -= 10; player1.score4 += 1; }
+	while (player1.score4 > 9) { player1.score4 -= 10; }
+}
+
+// Adding 1 point is equivalent to adding 100 points in the ui. Maximums in-game score: 999900
+static void add_score_player2(u8 score_increase){
+	player2.score1 += score_increase;
+	while (player2.score1 > 9) { player2.score1 -= 10; player2.score2 += 1; }
+	while (player2.score2 > 9) { player2.score2 -= 10; player2.score3 += 1; }
+	while (player2.score3 > 9) { player2.score3 -= 10; player2.score4 += 1; }
+	while (player2.score4 > 9) { player2.score4 -= 10; }
+}
+
 
 #define JOY_DPAD_MASK (JOY_UP_MASK | JOY_DOWN_MASK | JOY_LEFT_MASK | JOY_RIGHT_MASK)
 #define PLAYER_TICKS_PER_FRAME 4
@@ -268,6 +290,7 @@ static void update_player_movement(){
 	if(JOY_RIGHT(pad1.value)) { player1.x += 1; player1.player_direction = DIR_RIGHT; }
 	if(JOY_DOWN (pad1.value)) { player1.y += 1; player1.player_direction = DIR_DOWN; }
 	if(JOY_UP   (pad1.value)) { player1.y -= 1; player1.player_direction = DIR_UP; }
+	if(JOY_BTN_A(pad1.value)) { add_score_player1(1); } // TODO Delete, right now just a test for score
 	if(pad1.value & JOY_DPAD_MASK){
 		player1.anim_ticks++;
 		if(player1.anim_ticks/PLAYER_TICKS_PER_FRAME == 3) player1.anim_ticks = 0;
@@ -286,6 +309,13 @@ static void update_player_movement(){
 	if(JOY_RIGHT(pad2.value)) { player2.x += 1; player2.player_direction = DIR_RIGHT; }
 	if(JOY_DOWN (pad2.value)) { player2.y += 1; player2.player_direction = DIR_DOWN; }
 	if(JOY_UP   (pad2.value)) { player2.y -= 1; player2.player_direction = DIR_UP; }
+	if(JOY_BTN_A(pad2.value)) { add_score_player2(1); } // TODO Delete, right now just a test for score
+	if(pad2.value & JOY_DPAD_MASK){
+		player2.anim_ticks++;
+		if(player2.anim_ticks/PLAYER_TICKS_PER_FRAME == 3) player2.anim_ticks = 0;
+	} else {
+		player2.anim_ticks = 0;
+	}
 	
 	// Clamp player movement never goes oob
 	if (player2.x < HALF_PLAYER_SIZE) { player2.x = HALF_PLAYER_SIZE; }
@@ -295,24 +325,31 @@ static void update_player_movement(){
 	if (player2.y > SCREEN_RES_Y - HALF_PLAYER_SIZE) { player2.y = SCREEN_RES_Y - HALF_PLAYER_SIZE; }
 }
 
+static void draw_score_labels(){
+	char buffer[7];
+	
+	sprintf(buffer, "%d%d%d%d00", player1.score4, player1.score3, player1.score2, player1.score1);
+	px_buffer_blit(NT_ADDR(0, 2, 27), buffer, strlen(buffer));
+
+	sprintf(buffer, "%d%d%d%d00", player2.score4, player2.score3, player2.score2, player2.score1);
+	px_buffer_blit(NT_ADDR(0, 24, 27), buffer, strlen(buffer));
+}
+
 u8* minutes_timer;
 u8* seconds_timer;
 u8* frames_timer;
 
-static void update_game_timer(){
-	char buffer[10];
-	// u8 visible_minutes;
-	// u8 visible_seconds;
+// Returns true when game should continue, false when game is over
+static bool update_game_timer(){
+	char buffer[5];
 
-	frames_timer--;
 	if (frames_timer == 0){
 		
 		if (seconds_timer == 0)
 		{
 			if (minutes_timer == 0)
 			{
-				// TODO End the game and go to game over screen
-				return;
+				return false;
 			}
 			minutes_timer--;
 			seconds_timer = 60;
@@ -321,15 +358,21 @@ static void update_game_timer(){
 		seconds_timer--;
 		frames_timer = FPS;
 	}
+	frames_timer--;
 
 	// Draw the timer
 	if (seconds_timer < 10) sprintf(buffer, "%d:0%d", minutes_timer, seconds_timer);
 	else 					sprintf(buffer, "%d:%d", minutes_timer, seconds_timer);
 	
 	px_buffer_blit(NT_ADDR(0, 14, 2), buffer, strlen(buffer));
+
+	return true;
 }
 
-static void splash_screen(void){
+
+static void game_over_screen();
+
+static void game_run(void){
 	px_ppu_sync_disable();{
 		// Load the splash tilemap into nametable 0.
 		px_lz4_to_vram(NT_ADDR(0, 0, 0), MAP_DUMP);
@@ -345,10 +388,18 @@ static void splash_screen(void){
 	player1.x = 64;
 	player1.y = 120;
 	player1.player_direction = DIR_RIGHT;
+	player1.score1 = 0;
+	player1.score2 = 0;
+	player1.score3 = 0;
+	player1.score4 = 0;
 	
 	player2.x = SCREEN_RES_X - 64;
 	player2.y = 120;
 	player2.player_direction = DIR_LEFT;
+	player2.score1 = 0;
+	player2.score2 = 0;
+	player2.score3 = 0;
+	player2.score4 = 0;
 
 	// Length of a round, change if needed (Assumes that minutes are < 10 and seconds < 60)
 	minutes_timer = 2;
@@ -360,19 +411,87 @@ static void splash_screen(void){
 		
 		read_gamepads();
 		update_player_movement();
+		if (!update_game_timer()) game_over_screen();
+		draw_score_labels();
 		
 		// Draw player sprites
 		meta_spr(player1.x, player1.y, 0, PLAYER_ANIMS[player1.player_direction][player1.anim_ticks/PLAYER_TICKS_PER_FRAME]);
-		meta_spr(player2.x, player2.y, 0, PLAYER_ANIMS[player2.player_direction][0]);
+		meta_spr(player2.x, player2.y, 0, PLAYER_ANIMS[player2.player_direction][player2.anim_ticks/PLAYER_TICKS_PER_FRAME]);
 		
-		update_game_timer();
 		draw_arena();
 		
 		px_spr_end();
 		px_wait_nmi();
 	}
 	
-	splash_screen();
+	game_run();
+}
+
+// 0 is a tie, 1 is player 1, 2 is player 2
+static u8 get_winner(){
+	if (player1.score4 > player2.score4) return 1;
+	if (player1.score4 < player2.score4) return 2;
+	
+	if (player1.score3 > player2.score3) return 1;
+	if (player1.score3 < player2.score3) return 2;
+	
+	if (player1.score2 > player2.score2) return 1;
+	if (player1.score2 < player2.score2) return 2;
+	
+	if (player1.score1 > player2.score1) return 1;
+	if (player1.score1 < player2.score1) return 2;
+
+	return 0;
+}
+
+static void game_over_screen(){
+	char buffer[10];
+	u8 winner;
+
+	px_ppu_sync_disable();{
+		// Load the splash tilemap into nametable 0.
+		px_addr(NT_ADDR(0, 0, 0));
+		px_fill(1024, 0);
+	} px_ppu_sync_enable();
+
+	px_spr_clear();
+
+	while (true)
+	{
+		read_gamepads();
+		
+		if (JOY_START(pad1.value) || JOY_START(pad2.value)) {
+			game_run();
+		}
+
+		// Draw who winner is
+		winner = get_winner();
+		if (winner == 0)      sprintf(buffer, "Tie! Both Win!");
+		else if (winner == 1) sprintf(buffer, "Player 1 Wins!");
+		else if (winner == 2) sprintf(buffer, "Player 2 Wins!");
+		else                  sprintf(buffer, "ERROR! ? Wins!");
+		px_buffer_blit(NT_ADDR(0, 9, 6), buffer, strlen(buffer));
+		
+		// Draw player 1 score
+		sprintf(buffer, "Player 1:");
+		px_buffer_blit(NT_ADDR(0, 4, 14), buffer, strlen(buffer));
+		
+		sprintf(buffer, "%d%d%d%d00", player1.score4, player1.score3, player1.score2, player1.score1);
+		px_buffer_blit(NT_ADDR(0, 4, 16), buffer, strlen(buffer));
+		
+		// Draw player 2 score
+		sprintf(buffer, "Player 2:");
+		px_buffer_blit(NT_ADDR(0, 19, 14), buffer, strlen(buffer));
+
+		sprintf(buffer, "%d%d%d%d00", player2.score4, player2.score3, player2.score2, player2.score1);
+		px_buffer_blit(NT_ADDR(0, 22, 16), buffer, strlen(buffer));
+
+		// TODO Have some more stuff so not empty, maybe happy and sad raccoons for winner / loser
+		
+		px_spr_end();
+		px_wait_nmi();
+	}
+	
 }
 
 void main(void){
@@ -402,5 +521,5 @@ void main(void){
 	px_debug_hex_addr = NT_ADDR(0, 3, 3);
 	
 	// Jump to the splash screen state.
-	splash_screen();
+	game_run();
 }
