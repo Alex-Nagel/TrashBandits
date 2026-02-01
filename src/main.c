@@ -768,7 +768,7 @@ static void game_run(void){
 	add_score_player2(0);
 
 	// Length of a round, change if needed (Assumes that minutes are < 10 and seconds < 60)
-	minutes_timer = 2;
+	minutes_timer = 1;
 	seconds_timer = 30;
 	frames_timer = 60; // Keep this as 60
 	change_goal_seconds_timer = SECONDS_BETWEEN_GOAL_CHANGE;
