@@ -127,6 +127,13 @@ static u8* TRASH_METAS[] = {
 	TRASH_FISH_META,
 };
 
+static const u8 RETICLE_META[] = {
+	0, 0, 0x60, 0,
+	8, 0, 0x61, 0,
+	0, 8, 0x70, 0,
+	8, 8, 0x71, 0,
+	128,
+};
 static u8 TRASH_PAL[] = {2, 1, 3, 2};
 
 #define MAX_TRASH 10
@@ -139,6 +146,7 @@ struct {
 		
 		// counts down to 0 during the fall animation
 		u8  fall_anim[MAX_TRASH];
+		u8 player[MAX_TRASH]; // 0 if on ground, 1 if player 1 is picking it up, 2 for player 2
 	} trash;
 	
 	// horizontal spans with trash in them
@@ -153,6 +161,7 @@ static void drop_trash(u8 x, u8 y, u8 type){
 	ARENA.trash.fall_anim[idx] = 255;
 	ARENA.trash.count++;
 	ARENA.occupied[y] = true;
+	ARENA.trash.player[idx] = 0;
 }
 
 static void init_arena(void){
@@ -167,19 +176,6 @@ static void update_arena(void){
 	// TODO need timers for player goals
 	// TODO need timers for trash drops?
 	//   on a timer after player pickups?
-}
-
-static void draw_arena(){
-	for(idx = 0; idx < ARENA.trash.count; idx++){
-		if(ARENA.trash.fall_anim[idx]){
-			if(ARENA.trash.y[idx] > ARENA.trash.fall_anim[idx]){
-				meta_spr(ARENA.trash.x[idx], ARENA.trash.y[idx] - ARENA.trash.fall_anim[idx], 1, TRASH_BAG_ANIM[px_ticks/4 % 4]);
-			}
-			ARENA.trash.fall_anim[idx]--;
-		} else {
-			meta_spr(ARENA.trash.x[idx], ARENA.trash.y[idx], TRASH_PAL[ARENA.trash.type[idx]], TRASH_METAS[ARENA.trash.type[idx]]);
-		}
-	}
 }
 
 static const u8 PLAYER_LEFT0_META[] = {
@@ -297,10 +293,29 @@ struct Player {
 
 	int score;
 	u8 anim_ticks;
+
+	bool hands_free;
 };
 
 struct Player player1;
 struct Player player2;
+
+static void draw_arena(){
+	for(idx = 0; idx < ARENA.trash.count; idx++){
+		if(ARENA.trash.fall_anim[idx]){
+			if(ARENA.trash.y[idx] > ARENA.trash.fall_anim[idx]){
+				meta_spr(ARENA.trash.x[idx], ARENA.trash.y[idx] - ARENA.trash.fall_anim[idx], 1, TRASH_BAG_ANIM[px_ticks/4 % 4]);
+			}
+			ARENA.trash.fall_anim[idx]--;
+		} else {
+			// meta_spr(ARENA.trash.x[idx], ARENA.trash.y[idx], TRASH_PAL[ARENA.trash.type[idx]], TRASH_METAS[ARENA.trash.type[idx]]);
+			if     (ARENA.trash.player[idx] == 0) meta_spr(ARENA.trash.x[idx], ARENA.trash.y[idx], TRASH_PAL[ARENA.trash.type[idx]], TRASH_METAS[ARENA.trash.type[idx]]);
+			else if(ARENA.trash.player[idx] == 1) meta_spr(player1.x - 8, player1.y - 24, TRASH_PAL[ARENA.trash.type[idx]], TRASH_METAS[ARENA.trash.type[idx]]);
+			else if(ARENA.trash.player[idx] == 2) meta_spr(player2.x - 8, player2.y - 24, TRASH_PAL[ARENA.trash.type[idx]], TRASH_METAS[ARENA.trash.type[idx]]);
+			else							 	  meta_spr(4, 4, TRASH_PAL[ARENA.trash.type[idx]], TRASH_METAS[ARENA.trash.type[idx]]);
+		}
+	}
+}
 
 // Unfortunately didn't get to retain the ascii tiles
 // Need to translate the digits and ':' into tiles
@@ -375,6 +390,78 @@ static void update_player_movement(){
 
 	if (player2.x > SCREEN_RES_X - HALF_PLAYER_SIZE) { player2.x = SCREEN_RES_X - HALF_PLAYER_SIZE; }
 	if (player2.y > SCREEN_RES_Y - HALF_PLAYER_SIZE) { player2.y = SCREEN_RES_Y - HALF_PLAYER_SIZE; }
+	
+}
+
+static void update_reticles(){
+	u8 playerx;
+	u8 playery;
+	u8 trash1_global_x;
+	u8 trash1_global_y;
+	u8 trash2_global_x;
+	u8 trash2_global_y;
+	u8 trash_x;
+	u8 trash_y;
+	u8 grid1_x;
+	u8 grid1_y;
+	u8 grid2_x;
+	u8 grid2_y;
+
+	// Draw player1 reticle
+	playerx = player1.x;
+	playery = player1.y;
+
+	if (player1.player_direction == DIR_LEFT) playerx -= 16;
+	if (player1.player_direction == DIR_RIGHT) playerx += 16;
+	if (player1.player_direction == DIR_DOWN) playery += 16;
+	if (player1.player_direction == DIR_UP) playery -= 16;
+
+	grid1_x = playerx / 16;
+	grid1_y = playery / 16;
+
+	trash1_global_x = playerx - (playerx % 16);
+	trash1_global_y = playery - (playery % 16);
+
+	// meta_spr(x, y, 0, RETICLE_META);
+	
+	// Draw player2 reticle
+	playerx = player2.x;
+	playery = player2.y;
+
+	if (player2.player_direction == DIR_LEFT) playerx -= 16;
+	if (player2.player_direction == DIR_RIGHT) playerx += 16;
+	if (player2.player_direction == DIR_DOWN) playery += 16;
+	if (player2.player_direction == DIR_UP) playery -= 16;
+
+	grid2_x = playerx / 16;
+	grid2_y = playery / 16;
+
+	trash2_global_x = playerx - (playerx % 16);
+	trash2_global_y = playery - (playery % 16);
+
+	// meta_spr(x, y, 0, RETICLE_META);
+
+	// Check for pickup
+	for(idx = 0; idx < ARENA.trash.count; idx++){
+		trash_x = ARENA.trash.x[idx] / 16;
+		trash_y = ARENA.trash.y[idx] / 16;
+
+		if (trash_x == grid1_x && trash_y == grid1_y && ARENA.trash.player[idx] == 0 && player1.hands_free){
+			meta_spr(trash1_global_x, trash1_global_y, 0, RETICLE_META);
+			if (JOY_BTN_A(pad1.value)){
+				ARENA.trash.player[idx] = 1;
+				player1.hands_free = false;
+			}
+		}
+
+		if (trash_x == grid2_x && trash_y == grid2_y && ARENA.trash.player[idx] == 0 && player2.hands_free){
+			meta_spr(trash2_global_x, trash2_global_y, 0, RETICLE_META);
+			if (JOY_BTN_A(pad2.value)){
+				ARENA.trash.player[idx] = 2;
+				player2.hands_free = false;
+			}
+		}
+	}
 }
 
 u8* minutes_timer;
@@ -430,6 +517,7 @@ static void game_run(void){
 	// Set initial player positions. Might want to change later
 	player1.x = 64;
 	player1.y = 120;
+	player1.hands_free = true;
 	player1.player_direction = DIR_RIGHT;
 	player1.score = 0;
 	// triggers a redraw
@@ -437,6 +525,7 @@ static void game_run(void){
 	
 	player2.x = SCREEN_RES_X - 64;
 	player2.y = 120;
+	player2.hands_free = true;
 	player2.player_direction = DIR_LEFT;
 	player2.score = 0;
 	// triggers a redraw
@@ -460,6 +549,8 @@ static void game_run(void){
 		meta_spr(player2.x, player2.y, 0, PLAYER_ANIMS[player2.player_direction][player2.anim_ticks/PLAYER_TICKS_PER_FRAME]);
 		
 		draw_arena();
+
+		update_reticles();
 		
 		px_spr_end();
 		// px_profile_end();
