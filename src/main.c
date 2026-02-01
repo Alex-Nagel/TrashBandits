@@ -339,7 +339,7 @@ static void add_score_player2(u8 score_increase){
 
 
 #define JOY_DPAD_MASK (JOY_UP_MASK | JOY_DOWN_MASK | JOY_LEFT_MASK | JOY_RIGHT_MASK)
-#define PLAYER_TICKS_PER_FRAME 4
+#define PLAYER_TICKS_PER_FRAME 8
 
 static void update_player_movement(){
 	if(JOY_LEFT (pad1.value)) { player1.x -= 1; player1.player_direction = DIR_LEFT; }
@@ -351,7 +351,7 @@ static void update_player_movement(){
 		player1.anim_ticks++;
 		if(player1.anim_ticks/PLAYER_TICKS_PER_FRAME == 3) player1.anim_ticks = 0;
 	} else {
-		player1.anim_ticks = 0;
+		player1.anim_ticks = PLAYER_TICKS_PER_FRAME;
 	}
 
 	// Clamp player movement never goes oob
