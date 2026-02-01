@@ -18,7 +18,7 @@
 
 #define SECONDS_BETWEEN_GOAL_CHANGE 15
 
-#define STUN_DIST 12
+#define STUN_DIST 16
 #define STUN_TICKS 120
 #define INVULNERABLE_TICKS 240
 
@@ -339,12 +339,12 @@ static void update_arena(void){
 			
 		if(ARENA.trash.throw_anim[idx]){
 			// Move in thrown direction
-			if      (ARENA.trash.throw_dir[idx] == 0)      ARENA.trash.x[idx] -= 4*256; // Left
+			if      (ARENA.trash.throw_dir[idx] == 0) ARENA.trash.x[idx] -= 4*256; // Left
 			else if (ARENA.trash.throw_dir[idx] == 1) ARENA.trash.x[idx] += 4*256; // Right
 			else if (ARENA.trash.throw_dir[idx] == 2) ARENA.trash.y[idx] += 4*256; // Down
 			else if (ARENA.trash.throw_dir[idx] == 3) ARENA.trash.y[idx] -= 4*256; // Up
 
-			ARENA.trash.y[idx] += 80*(THROW_TICKS - ARENA.trash.throw_anim[idx]);
+			// ARENA.trash.y[idx] += 80*(THROW_TICKS - ARENA.trash.throw_anim[idx]);
 			ARENA.trash.throw_anim[idx]--;
 			
 			// if ticks < num check for player collision
@@ -352,7 +352,8 @@ static void update_arena(void){
 			if(ARENA.trash.throw_anim[idx]){
 				if(
 					player1.invulnerable_ticks == 0 && ARENA.trash.player[idx] == 2 &&
-					abs(player1.x/256 - ARENA.trash.x[idx]/256) < STUN_DIST && abs(player1.y/256 - ARENA.trash.y[idx]/256) < STUN_DIST
+					abs(player1.x/256 - ARENA.trash.x[idx]/256 - 8) < STUN_DIST &&
+					abs(player1.y/256 - ARENA.trash.y[idx]/256 - 8) < STUN_DIST
 				){
 					player1.stun_ticks = STUN_TICKS;
 					player1.invulnerable_ticks = INVULNERABLE_TICKS;
@@ -368,7 +369,8 @@ static void update_arena(void){
 				}
 				if(
 					player2.invulnerable_ticks == 0 && ARENA.trash.player[idx] == 1 &&
-					abs(player2.x/256 - ARENA.trash.x[idx]/256) < STUN_DIST && abs(player2.y/256 - ARENA.trash.y[idx]/256) < STUN_DIST
+					abs(player2.x/256 - ARENA.trash.x[idx]/256 - 8) < STUN_DIST &&
+					abs(player2.y/256 - ARENA.trash.y[idx]/256 - 8) < STUN_DIST
 				){
 					player2.stun_ticks = STUN_TICKS;
 					player2.invulnerable_ticks = INVULNERABLE_TICKS;
@@ -570,7 +572,9 @@ static void draw_arena(){
 				meta_spr(ARENA.trash.x[idx0]/256, ARENA.trash.y[idx0]/256 - ARENA.trash.fall_anim[idx0], 1, TRASH_BAG_ANIM[px_ticks/4 % 4]);
 			}
 		} else {
-			meta_spr(ARENA.trash.x[idx0]/256, ARENA.trash.y[idx0]/256, TRASH_PAL[ARENA.trash.type[idx0]], TRASH_METAS[ARENA.trash.type[idx0]]);
+			iy = ARENA.trash.y[idx0]/256;
+			iy -= 16*ARENA.trash.throw_anim[idx0]/THROW_TICKS;
+			meta_spr(ARENA.trash.x[idx0]/256, iy, TRASH_PAL[ARENA.trash.type[idx0]], TRASH_METAS[ARENA.trash.type[idx0]]);
 		}
 		
 		idx0++;
@@ -684,6 +688,7 @@ static void update_player_movement(){
 		
 		if(JOY_BTN_A(pad1.release)){
 			ARENA.trash.throw_anim[player1.selected] = THROW_TICKS;
+			ARENA.trash.y[player1.selected] += 256*16;
 			ARENA.trash.throw_dir[player1.selected] = player1.player_direction;
 			player1.hands_free = true;
 			player1.selected = ~0;
@@ -732,6 +737,7 @@ static void update_player_movement(){
 		
 		if(JOY_BTN_A(pad2.release)){
 			ARENA.trash.throw_anim[player2.selected] = THROW_TICKS;
+			ARENA.trash.y[player2.selected] += 256*16;
 			ARENA.trash.throw_dir[player2.selected] = player2.player_direction;
 			player2.hands_free = true;
 			player2.selected = ~0;
