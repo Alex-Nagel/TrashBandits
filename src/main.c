@@ -57,6 +57,7 @@ static void darken(register const u8* palette, u8 shift){
 }
 
 void fade_from_black(const u8* palette, u8 delay){
+	px_wait_frames(delay);
 	darken(palette, 4);
 	px_wait_frames(delay);
 	darken(palette, 3);
@@ -66,9 +67,11 @@ void fade_from_black(const u8* palette, u8 delay){
 	darken(palette, 1);
 	px_wait_frames(delay);
 	darken(palette, 0);
+	px_wait_frames(delay);
 }
 
 void fade_to_black(const u8* palette, u8 delay){
+	px_wait_frames(delay);
 	darken(palette, 0);
 	px_wait_frames(delay);
 	darken(palette, 1);
@@ -78,6 +81,7 @@ void fade_to_black(const u8* palette, u8 delay){
 	darken(palette, 3);
 	px_wait_frames(delay);
 	darken(palette, 4);
+	px_wait_frames(delay);
 }
 
 void meta_spr(u8 x, u8 y, u8 pal, const u8* data);
@@ -1094,7 +1098,7 @@ void main(void){
 	px_debug_hex_addr = NT_ADDR(0, 3, 3);
 	
 	// Jump to the splash screen state.
-	// igda_screen();
-	game_run();
+	igda_screen();
+	// game_run();
 	
 }
