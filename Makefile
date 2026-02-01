@@ -85,7 +85,18 @@ $(ROM): ld65.cfg $(OBJS) $(PX_LIB)
 	tools/lz4x -f9 $< $@
 # 	touch $@ # dunno why lz4x doesn't update timestamps
 
-src/data.o: $(CHR:.png=.lz4) chr/IGDA.lz4 chr/dump.lz4 map/IGDA.lz4 map/dump.lz4
+OTHER_DATA = \
+	chr/title.pal \
+	chr/IGDA.pal \
+	chr/dump.pal \
+	chr/title.lz4 \
+	chr/IGDA.lz4 \
+	chr/dump.lz4 \
+	map/title.lz4 \
+	map/IGDA.lz4 \
+	map/dump.lz4 \
+
+src/data.o: $(CHR:.png=.lz4) $(OTHER_DATA)
 
 tiles: chr/0.chr
 	tools/chr2png "1D 00 10 20" chr/0.chr chr/0-pal0.png

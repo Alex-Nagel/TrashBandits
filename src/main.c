@@ -68,6 +68,18 @@ void fade_from_black(const u8* palette, u8 delay){
 	darken(palette, 0);
 }
 
+void fade_to_black(const u8* palette, u8 delay){
+	darken(palette, 0);
+	px_wait_frames(delay);
+	darken(palette, 1);
+	px_wait_frames(delay);
+	darken(palette, 2);
+	px_wait_frames(delay);
+	darken(palette, 3);
+	px_wait_frames(delay);
+	darken(palette, 4);
+}
+
 void meta_spr(u8 x, u8 y, u8 pal, const u8* data);
 
 static const u8 TRASH_BAG0_META[] = {
@@ -244,7 +256,7 @@ static void drop_trash(u8 idx){
 	ARENA.trash.x[idx] = 256*16*(ix + (16 - 8)/2);
 	ARENA.trash.y[idx] = 256*16*(idx + (15 - MAX_TRASH)/2);
 	ARENA.trash.type[idx] = rand()%4;
-	ARENA.trash.fall_anim[idx] = 1;
+	ARENA.trash.fall_anim[idx] = 192 + (rand() % 64);
 	ARENA.trash.player[idx] = 0;
 }
 
@@ -263,6 +275,7 @@ static void update_arena(void){
 	// TODO need timers for player goals
 	// TODO need timers for trash drops?
 	//   on a timer after player pickups?
+	u8 idx;
 	for(idx = 0; idx < MAX_TRASH; idx++){
 		if(ARENA.trash.fall_anim[idx]){
 			ARENA.trash.fall_anim[idx]--;
@@ -309,6 +322,11 @@ static void update_arena(void){
 						if (matching) add_score_player2(GOAL_TRASH_SCORE);
 						else		  add_score_player2(NORMAL_TRASH_SCORE);
 					}
+				}
+				
+				// respawn trash thrown off the bottom of the screen
+				if(ARENA.trash.y[idx]/256 > 224){
+					drop_trash(idx);
 				}
 			}
 		}
@@ -434,15 +452,23 @@ static const u8** PLAYER_ANIMS[] = {
 };
 
 static void draw_arena(){
+	static u8 idx0 = 0;
+	
 	for(idx = 0; idx < MAX_TRASH; idx++){
-		if(ARENA.trash.fall_anim[idx]){
-			if(ARENA.trash.y[idx] > ARENA.trash.fall_anim[idx]){
-				meta_spr(ARENA.trash.x[idx]/256, ARENA.trash.y[idx]/256 - ARENA.trash.fall_anim[idx], 1, TRASH_BAG_ANIM[px_ticks/4 % 4]);
+		if(ARENA.trash.fall_anim[idx0]){
+			if(ARENA.trash.y[idx0]/256 > ARENA.trash.fall_anim[idx0]){
+				meta_spr(ARENA.trash.x[idx0]/256, ARENA.trash.y[idx0]/256 - ARENA.trash.fall_anim[idx0], 1, TRASH_BAG_ANIM[px_ticks/4 % 4]);
 			}
 		} else {
-			meta_spr(ARENA.trash.x[idx]/256, ARENA.trash.y[idx]/256, TRASH_PAL[ARENA.trash.type[idx]], TRASH_METAS[ARENA.trash.type[idx]]);
+			meta_spr(ARENA.trash.x[idx0]/256, ARENA.trash.y[idx0]/256, TRASH_PAL[ARENA.trash.type[idx0]], TRASH_METAS[ARENA.trash.type[idx0]]);
 		}
+		
+		idx0++;
+		if(idx0 == MAX_TRASH) idx0 = 0;
 	}
+	
+	idx0++;
+	if(idx0 == MAX_TRASH) idx0 = 0;
 }
 
 static void draw_sparkles(){
@@ -472,14 +498,14 @@ static draw_num(u8 x, u8 y){
 static void add_score_player1(u8 score_increase){
 	player1.score += score_increase;
 	sprintf(text_buffer, "%04d00", player1.score);
-	draw_num(2, 27);
+	draw_num(2, 26);
 }
 
 // Adding 1 point is equivalent to adding 100 points in the ui. Maximums in-game score: 999900
 static void add_score_player2(u8 score_increase){
 	player2.score += score_increase;
 	sprintf(text_buffer, "%04d00", player2.score);
-	draw_num(24, 27);
+	draw_num(24, 26);
 	
 }
 
@@ -642,6 +668,10 @@ static void update_reticles(){
 	
 	// Check for pickup
 	for(idx = 0; idx < MAX_TRASH; idx++){
+		if(ARENA.trash.fall_anim[idx] > 0) continue;
+		// allow player to catch?
+		// if(ARENA.trash.throw_anim[idx] > 0) continue;
+		
 		trash_x = ARENA.trash.x[idx] / (16*256);
 		trash_y = ARENA.trash.y[idx] / (16*256);
 
@@ -707,6 +737,7 @@ static void game_run(void){
 		px_spr_table(1);
 		// Load the tilemap into nametable 0.
 		px_lz4_to_vram(NT_ADDR(0, 0, 0), MAP_DUMP);
+		PX.scroll_x = -2;
 	} px_ppu_sync_enable();
 	
 	// music_play(0);
@@ -756,15 +787,15 @@ static void game_run(void){
 		meta_spr(player1.x, player1.y, 0, PLAYER_ANIMS[player1.player_direction][player1.anim_ticks/PLAYER_TICKS_PER_FRAME]);
 		meta_spr(player2.x, player2.y, 0, PLAYER_ANIMS[player2.player_direction][player2.anim_ticks/PLAYER_TICKS_PER_FRAME]);
 
-		// Draw goal trash sprites (may want to change position / flicker later, but if in corners don't have to worry about that as much)
-		meta_spr(16, 200, TRASH_PAL[player1.goal_trash_type], TRASH_METAS[player1.goal_trash_type]);
-		meta_spr(224, 200, TRASH_PAL[player2.goal_trash_type], TRASH_METAS[player2.goal_trash_type]);
-
 		draw_sparkles();
 		
+		// Draw goal trash sprites (may want to change position / flicker later, but if in corners don't have to worry about that as much)
+		meta_spr(16, 188, TRASH_PAL[player1.goal_trash_type], TRASH_METAS[player1.goal_trash_type]);
+		meta_spr(224, 188, TRASH_PAL[player2.goal_trash_type], TRASH_METAS[player2.goal_trash_type]);
+		
+		update_reticles();
 		draw_arena();
 
-		update_reticles();
 		
 		px_spr_end();
 		// px_profile_end();
@@ -793,6 +824,7 @@ static void game_over_screen(){
 		// clear the screen
 		px_addr(NT_ADDR(0, 0, 0));
 		px_fill(1024, 0);
+		PX.scroll_x = 0;
 	} px_ppu_sync_enable();
 
 	px_spr_clear();
@@ -852,11 +884,38 @@ static void game_over_screen(){
 	}
 }
 
+static void title_screen(){
+	px_ppu_sync_disable();{
+		// Decompress the tileset into character memory.
+		px_lz4_to_vram(CHR_ADDR(0, 0), CHR_TITLE);
+		// Set which tiles to use for the background and sprites.
+		px_bg_table(0);
+		px_spr_table(0);
+		
+		px_lz4_to_vram(NT_ADDR(0, 0, 0), MAP_TITLE);
+		PX.scroll_x = 0;
+	} px_ppu_sync_enable();
+
+	px_spr_clear();
+	
+	fade_from_black(PAL_TITLE, 4);
+	
+	while (true){
+		read_gamepads();
+		if (JOY_START(pad1.value) || JOY_START(pad2.value)) break;
+		// scramble the seed
+		rand_seed++;
+		
+		px_spr_end();
+		px_wait_nmi();
+	}
+	
+	fade_to_black(PAL_TITLE, 4);
+	game_run();
+}
+
 static void igda_screen(){
 	px_ppu_sync_disable();{
-		px_addr(PAL_ADDR);
-		px_blit(16, PAL_IGDA);
-		
 		// Decompress the tileset into character memory.
 		px_lz4_to_vram(CHR_ADDR(0, 0), CHR_IGDA);
 		// Set which tiles to use for the background and sprites.
@@ -864,19 +923,25 @@ static void igda_screen(){
 		px_spr_table(0);
 		
 		px_lz4_to_vram(NT_ADDR(0, 0, 0), MAP_IGDA);
+		PX.scroll_x = 0;
 	} px_ppu_sync_enable();
 
 	px_spr_clear();
 	
+	fade_from_black(PAL_IGDA, 4);
+	
 	while (true){
 		read_gamepads();
-		if (JOY_START(pad1.value) || JOY_START(pad2.value)) {
-			game_run();
-		}
+		if (JOY_START(pad1.value) || JOY_START(pad2.value)) break;
+		// scramble the seed
+		rand_seed++;
 		
 		px_spr_end();
 		px_wait_nmi();
 	}
+	
+	fade_to_black(PAL_IGDA, 4);
+	title_screen();
 }
 
 void main(void){
@@ -898,7 +963,7 @@ void main(void){
 	px_debug_hex_addr = NT_ADDR(0, 3, 3);
 	
 	// Jump to the splash screen state.
-	// igda_screen();
-	game_run();
+	igda_screen();
+	// game_run();
 	
 }
