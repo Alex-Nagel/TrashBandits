@@ -57,6 +57,37 @@ void fade_from_black(const u8* palette, u8 delay){
 
 void meta_spr(u8 x, u8 y, u8 pal, const u8* data);
 
+static const u8 TRASH_BAG0_META[] = {
+	0, 0, 0x40, 0,
+	8, 0, 0x41, 0,
+	0, 8, 0x50, 0,
+	8, 8, 0x51, 0,
+	128,
+};
+
+static const u8 TRASH_BAG1_META[] = {
+	0, 0, 0x42, 0,
+	8, 0, 0x43, 0,
+	0, 8, 0x52, 0,
+	8, 8, 0x53, 0,
+	128,
+};
+
+static const u8 TRASH_BAG2_META[] = {
+	0, 0, 0x44, 0,
+	8, 0, 0x45, 0,
+	0, 8, 0x54, 0,
+	8, 8, 0x55, 0,
+	128,
+};
+
+static const u8* TRASH_BAG_ANIM[] = {
+	TRASH_BAG0_META,
+	TRASH_BAG1_META,
+	TRASH_BAG2_META,
+	TRASH_BAG1_META
+};
+
 static const u8 TRASH_APPLE_META[] = {
 	0, 0, 0x00, 0,
 	8, 0, 0x01, 0,
@@ -113,7 +144,7 @@ struct {
 
 static void drop_trash(u8 x, u8 y, u8 type){
 	idx = ARENA.trash.count;
-	ARENA.trash.x[idx] = 16*(x + (16 - 10)/2);
+	ARENA.trash.x[idx] = 16*(x + (16 - 8)/2);
 	ARENA.trash.y[idx] = 16*(y + (15 - MAX_TRASH)/2);
 	ARENA.trash.type[idx] = type;
 	ARENA.trash.count++;
@@ -123,7 +154,7 @@ static void drop_trash(u8 x, u8 y, u8 type){
 static void init_arena(void){
 	u8 i;
 	for(i = 0; i < MAX_TRASH; i++){
-		drop_trash(rand()%10, i, i%4);
+		drop_trash(rand()%8, i, i%4);
 	}
 }
 
@@ -137,6 +168,7 @@ static void update_arena(void){
 static void draw_arena(){
 	for(idx = 0; idx < ARENA.trash.count; idx++){
 		meta_spr(ARENA.trash.x[idx], ARENA.trash.y[idx], TRASH_PAL[ARENA.trash.type[idx]], TRASH_METAS[ARENA.trash.type[idx]]);
+		// meta_spr(ARENA.trash.x[idx], ARENA.trash.y[idx], 1, TRASH_BAG_ANIM[px_ticks/4 % 4]);
 	}
 }
 
