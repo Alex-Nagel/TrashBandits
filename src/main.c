@@ -210,7 +210,7 @@ static void drop_trash(u8 idx){
 	ARENA.trash.x[idx] = 256*16*(ix + (16 - 8)/2);
 	ARENA.trash.y[idx] = 256*16*(idx + (15 - MAX_TRASH)/2);
 	ARENA.trash.type[idx] = rand()%4;
-	ARENA.trash.fall_anim[idx] = 1;
+	ARENA.trash.fall_anim[idx] = 255;
 	ARENA.trash.player[idx] = 0;
 }
 
@@ -228,6 +228,7 @@ static void update_arena(void){
 	// TODO need timers for player goals
 	// TODO need timers for trash drops?
 	//   on a timer after player pickups?
+	u8 idx;
 	for(idx = 0; idx < MAX_TRASH; idx++){
 		if(ARENA.trash.fall_anim[idx]){
 			ARENA.trash.fall_anim[idx]--;
@@ -262,6 +263,11 @@ static void update_arena(void){
 						drop_trash(idx);
 						add_score_player2(10);
 					}
+				}
+				
+				// respawn trash thrown off the bottom of the screen
+				if(ARENA.trash.y[idx]/256 > 224){
+					drop_trash(idx);
 				}
 			}
 		}
@@ -391,7 +397,7 @@ static void draw_arena(){
 	
 	for(idx = 0; idx < MAX_TRASH; idx++){
 		if(ARENA.trash.fall_anim[idx0]){
-			if(ARENA.trash.y[idx0] > ARENA.trash.fall_anim[idx0]){
+			if(ARENA.trash.y[idx0]/256 > ARENA.trash.fall_anim[idx0]){
 				meta_spr(ARENA.trash.x[idx0]/256, ARENA.trash.y[idx0]/256 - ARENA.trash.fall_anim[idx0], 1, TRASH_BAG_ANIM[px_ticks/4 % 4]);
 			}
 		} else {
@@ -589,6 +595,10 @@ static void update_reticles(){
 	
 	// Check for pickup
 	for(idx = 0; idx < MAX_TRASH; idx++){
+		if(ARENA.trash.fall_anim[idx] > 0) continue;
+		// allow player to catch?
+		// if(ARENA.trash.throw_anim[idx] > 0) continue;
+		
 		trash_x = ARENA.trash.x[idx] / (16*256);
 		trash_y = ARENA.trash.y[idx] / (16*256);
 
@@ -801,6 +811,8 @@ static void title_screen(){
 	while (true){
 		read_gamepads();
 		if (JOY_START(pad1.value) || JOY_START(pad2.value)) break;
+		// scramble the seed
+		rand_seed++;
 		
 		px_spr_end();
 		px_wait_nmi();
@@ -829,6 +841,8 @@ static void igda_screen(){
 	while (true){
 		read_gamepads();
 		if (JOY_START(pad1.value) || JOY_START(pad2.value)) break;
+		// scramble the seed
+		rand_seed++;
 		
 		px_spr_end();
 		px_wait_nmi();
