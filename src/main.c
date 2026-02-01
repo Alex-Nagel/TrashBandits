@@ -401,7 +401,13 @@ static void game_over_screen();
 
 static void game_run(void){
 	px_ppu_sync_disable();{
-		// Load the splash tilemap into nametable 0.
+		// Decompress the tileset into character memory.
+		px_lz4_to_vram(CHR_ADDR(0, 0), CHR_DUMP);
+		px_lz4_to_vram(CHR_ADDR(1, 0), CHR_SPRITES);
+		// Set which tiles to use for the background and sprites.
+		px_bg_table(0);
+		px_spr_table(1);
+		// Load the tilemap into nametable 0.
 		px_lz4_to_vram(NT_ADDR(0, 0, 0), MAP_DUMP);
 	} px_ppu_sync_enable();
 	
@@ -462,9 +468,14 @@ static u8 get_winner(){
 }
 
 static void game_over_screen(){
-
 	px_ppu_sync_disable();{
-		// Load the splash tilemap into nametable 0.
+		// Decompress the tileset into character memory.
+		px_lz4_to_vram(CHR_ADDR(0, 0), CHR0);
+		// Set which tiles to use for the background and sprites.
+		px_bg_table(0);
+		px_spr_table(0);
+		
+		// clear the screen
 		px_addr(NT_ADDR(0, 0, 0));
 		px_fill(1024, 0);
 	} px_ppu_sync_enable();
@@ -510,7 +521,33 @@ static void game_over_screen(){
 		px_spr_end();
 		px_wait_nmi();
 	}
+}
+
+static void igda_screen(){
+	px_ppu_sync_disable();{
+		px_addr(PAL_ADDR);
+		px_blit(16, PAL_IGDA);
+		
+		// Decompress the tileset into character memory.
+		px_lz4_to_vram(CHR_ADDR(0, 0), CHR_IGDA);
+		// Set which tiles to use for the background and sprites.
+		px_bg_table(0);
+		px_spr_table(0);
+		
+		px_lz4_to_vram(NT_ADDR(0, 0, 0), MAP_IGDA);
+	} px_ppu_sync_enable();
+
+	px_spr_clear();
 	
+	while (true){
+		read_gamepads();
+		if (JOY_START(pad1.value) || JOY_START(pad2.value)) {
+			game_run();
+		}
+		
+		px_spr_end();
+		px_wait_nmi();
+	}
 }
 
 void main(void){
@@ -524,14 +561,6 @@ void main(void){
 	for(idx = 0; idx < 32; idx++) px_buffer_set_color(idx, 0x1D);
 	px_wait_nmi();
 	
-	// Decompress the tileset into character memory.
-	px_lz4_to_vram(CHR_ADDR(0, 0), CHR_DUMP);
-	px_lz4_to_vram(CHR_ADDR(1, 0), CHR_SPRITES);
-	
-	// Set which tiles to use for the background and sprites.
-	px_bg_table(0);
-	px_spr_table(1);
-	
 	music_init(&MUSIC);
 	sound_init(&SOUNDS);
 	music_play(0);
@@ -540,5 +569,7 @@ void main(void){
 	px_debug_hex_addr = NT_ADDR(0, 3, 3);
 	
 	// Jump to the splash screen state.
+	// igda_screen();
 	game_run();
+	
 }
