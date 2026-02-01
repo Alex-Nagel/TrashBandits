@@ -370,15 +370,23 @@ static const u8** PLAYER_ANIMS[] = {
 };
 
 static void draw_arena(){
+	static u8 idx0 = 0;
+	
 	for(idx = 0; idx < MAX_TRASH; idx++){
-		if(ARENA.trash.fall_anim[idx]){
-			if(ARENA.trash.y[idx] > ARENA.trash.fall_anim[idx]){
-				meta_spr(ARENA.trash.x[idx]/256, ARENA.trash.y[idx]/256 - ARENA.trash.fall_anim[idx], 1, TRASH_BAG_ANIM[px_ticks/4 % 4]);
+		if(ARENA.trash.fall_anim[idx0]){
+			if(ARENA.trash.y[idx0] > ARENA.trash.fall_anim[idx0]){
+				meta_spr(ARENA.trash.x[idx0]/256, ARENA.trash.y[idx0]/256 - ARENA.trash.fall_anim[idx0], 1, TRASH_BAG_ANIM[px_ticks/4 % 4]);
 			}
 		} else {
-			meta_spr(ARENA.trash.x[idx]/256, ARENA.trash.y[idx]/256, TRASH_PAL[ARENA.trash.type[idx]], TRASH_METAS[ARENA.trash.type[idx]]);
+			meta_spr(ARENA.trash.x[idx0]/256, ARENA.trash.y[idx0]/256, TRASH_PAL[ARENA.trash.type[idx0]], TRASH_METAS[ARENA.trash.type[idx0]]);
 		}
+		
+		idx0++;
+		if(idx0 == MAX_TRASH) idx0 = 0;
 	}
+	
+	idx0++;
+	if(idx0 == MAX_TRASH) idx0 = 0;
 }
 
 // Unfortunately didn't get to retain the ascii tiles
@@ -666,9 +674,9 @@ static void game_run(void){
 		meta_spr(player1.x, player1.y, 0, PLAYER_ANIMS[player1.player_direction][player1.anim_ticks/PLAYER_TICKS_PER_FRAME]);
 		meta_spr(player2.x, player2.y, 0, PLAYER_ANIMS[player2.player_direction][player2.anim_ticks/PLAYER_TICKS_PER_FRAME]);
 		
+		update_reticles();
 		draw_arena();
 
-		update_reticles();
 		
 		px_spr_end();
 		// px_profile_end();
