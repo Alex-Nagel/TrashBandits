@@ -147,7 +147,10 @@ struct {
 		// counts down to 0 during the fall animation
 		u8 fall_anim[MAX_TRASH];
 		u8 throw_anim[MAX_TRASH];
-		u8 player[MAX_TRASH]; // 0 if on ground, 1 if player 1 is picking it up, 2 for player 2
+		// Direction that the trash is currently being thrown, if being thrown
+		u8 throw_dir[MAX_TRASH];
+		// 0 if on ground, 1 if player 1 is picking it up, 2 for player 2
+		u8 player[MAX_TRASH];
 	} trash;
 	
 	// horizontal spans with trash in them
@@ -200,7 +203,12 @@ static void update_arena(void){
 		}
 			
 		if(ARENA.trash.throw_anim[idx]){
-			ARENA.trash.x[idx] += 4*256;
+			// Move in thrown direction
+			if      (ARENA.trash.throw_dir[idx] == 0)      ARENA.trash.x[idx] -= 4*256; // Left
+			else if (ARENA.trash.throw_dir[idx] == 1) ARENA.trash.x[idx] += 4*256; // Right
+			else if (ARENA.trash.throw_dir[idx] == 2) ARENA.trash.y[idx] += 4*256; // Down
+			else if (ARENA.trash.throw_dir[idx] == 3) ARENA.trash.y[idx] -= 4*256; // Up
+
 			ARENA.trash.y[idx] += 80*(THROW_TICKS - ARENA.trash.throw_anim[idx]);
 			ARENA.trash.throw_anim[idx]--;
 			
@@ -409,6 +417,7 @@ static void update_player_movement(){
 	
 	if(JOY_BTN_A(pad1.release)){
 		ARENA.trash.throw_anim[player1.selected] = THROW_TICKS;
+		ARENA.trash.throw_dir[player1.selected] = player1.player_direction;
 		ARENA.trash.player[player1.selected] = 0;
 		player1.hands_free = true;
 		player1.selected = ~0;
@@ -440,6 +449,7 @@ static void update_player_movement(){
 	
 	if(JOY_BTN_A(pad2.release)){
 		ARENA.trash.throw_anim[player2.selected] = THROW_TICKS;
+		ARENA.trash.throw_dir[player2.selected] = player2.player_direction;
 		ARENA.trash.player[player2.selected] = 0;
 		player2.hands_free = true;
 		player2.selected = ~0;
