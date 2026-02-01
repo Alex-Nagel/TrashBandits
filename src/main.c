@@ -234,6 +234,7 @@ struct Player {
 
 	int score;
 	u8 anim_ticks;
+	u8 stun_ticks;
 
 	bool hands_free;
 	u8 selected;
@@ -257,7 +258,10 @@ static void drop_trash(u8 idx){
 	ARENA.trash.y[idx] = 256*16*(idx + 4);
 	ARENA.trash.type[idx] = rand()%4;
 	ARENA.trash.fall_anim[idx] = 160 + (rand() % 64);
+	ARENA.trash.throw_anim[idx] = 0;
 	ARENA.trash.player[idx] = 0;
+	
+	// ARENA.trash.fall_anim[idx] = 0;
 }
 
 static void init_arena(void){
@@ -293,6 +297,33 @@ static void update_arena(void){
 			
 			// if ticks < num check for player collision
 			
+			if(ARENA.trash.throw_anim[idx] < THROW_TICKS/2){
+				if(abs(player1.x/256 - ARENA.trash.x[idx]/256) < 12 && abs(player1.x/256 - ARENA.trash.x[idx]/256) < 12){
+					player1.stun_ticks = 120;
+					drop_trash(idx);
+					
+					if(player1.selected != ~0){
+						ARENA.trash.player[player1.selected] = 0;
+						ARENA.trash.x[player1.selected] = (ARENA.trash.x[player1.selected] + 24*256) & 0xF000;
+						ARENA.trash.y[player1.selected] = (ARENA.trash.y[player1.selected] + 24*256) & 0xF000;
+					}
+					player1.hands_free = true;
+					player1.selected = ~0;
+				}
+				if(abs(player2.x/256 - ARENA.trash.x[idx]/256) < 12 && abs(player2.x/256 - ARENA.trash.x[idx]/256) < 12){
+					player2.stun_ticks = 120;
+					drop_trash(idx);
+					
+					if(player2.selected != ~0){
+						ARENA.trash.player[player2.selected] = 0;
+						ARENA.trash.x[player2.selected] = (ARENA.trash.x[player2.selected] + 24*256) & 0xF000;
+						ARENA.trash.y[player2.selected] = (ARENA.trash.y[player2.selected] + 24*256) & 0xF000;
+					}
+					player2.hands_free = true;
+					player2.selected = ~0;
+				}
+			}
+			
 			if(ARENA.trash.throw_anim[idx] == 0){
 				// snap to nearest grid
 				ARENA.trash.x[idx] = (ARENA.trash.x[idx] + 8*256) & 0xF000;
@@ -300,7 +331,6 @@ static void update_arena(void){
 				
 				// check landing area and award points
 				if (ARENA.trash.y[idx] / 256 < DUMPSTER_BOTTOM_BOUND && ARENA.trash.y[idx] / 256 > DUMPSTER_TOP_BOUND){
-					// drop_trash(idx);
 					if (ARENA.trash.x[idx] / 256 < DUMPSTER_1_RIGHT_BOUND){
 						matching = ARENA.trash.type[idx] == player1.goal_trash_type;
 
@@ -521,92 +551,100 @@ static void update_player_movement(){
 	u16 original_2y = player2.y;
 	u16 speed2 = player2.hands_free ? 1*256 : 3*256/4;
 
-	if(JOY_LEFT (pad1.value)) { player1.x -= speed1; player1.player_direction = DIR_LEFT; }
-	if(JOY_RIGHT(pad1.value)) { player1.x += speed1; player1.player_direction = DIR_RIGHT; }
-	if(JOY_DOWN (pad1.value)) { player1.y += speed1; player1.player_direction = DIR_DOWN; }
-	if(JOY_UP   (pad1.value)) { player1.y -= speed1; player1.player_direction = DIR_UP; }
-	// if(JOY_BTN_A(pad1.value)) { add_score_player1(1); } // TODO Delete, right now just a test for score
-	if(pad1.value & JOY_DPAD_MASK){
-		player1.anim_ticks++;
-		if(player1.anim_ticks/PLAYER_TICKS_PER_FRAME == 3) player1.anim_ticks = 0;
+	if(player1.stun_ticks){
+		player1.stun_ticks--;
 	} else {
-		player1.anim_ticks = PLAYER_TICKS_PER_FRAME;
-	}
+		if(JOY_LEFT (pad1.value)) { player1.x -= speed1; player1.player_direction = DIR_LEFT; }
+		if(JOY_RIGHT(pad1.value)) { player1.x += speed1; player1.player_direction = DIR_RIGHT; }
+		if(JOY_DOWN (pad1.value)) { player1.y += speed1; player1.player_direction = DIR_DOWN; }
+		if(JOY_UP   (pad1.value)) { player1.y -= speed1; player1.player_direction = DIR_UP; }
+		// if(JOY_BTN_A(pad1.value)) { add_score_player1(1); } // TODO Delete, right now just a test for score
+		if(pad1.value & JOY_DPAD_MASK){
+			player1.anim_ticks++;
+			if(player1.anim_ticks/PLAYER_TICKS_PER_FRAME == 3) player1.anim_ticks = 0;
+		} else {
+			player1.anim_ticks = PLAYER_TICKS_PER_FRAME;
+		}
 
-	// Clamp player movement never goes oob
-	if (player1.x/256 < HALF_PLAYER_SIZE) { player1.x = 256*HALF_PLAYER_SIZE; }
-	if (player1.y/256 < HALF_PLAYER_SIZE) { player1.y = 256*HALF_PLAYER_SIZE; }
-	
-	if (player1.x/256 > SCREEN_RES_X - HALF_PLAYER_SIZE) { player1.x = 256*(SCREEN_RES_X - HALF_PLAYER_SIZE); }
-	if (player1.y/256 > SCREEN_RES_Y - HALF_PLAYER_SIZE) { player1.y = 256*(SCREEN_RES_Y - HALF_PLAYER_SIZE); }
+		// Clamp player movement never goes oob
+		if (player1.x/256 < HALF_PLAYER_SIZE) { player1.x = 256*HALF_PLAYER_SIZE; }
+		if (player1.y/256 < HALF_PLAYER_SIZE) { player1.y = 256*HALF_PLAYER_SIZE; }
+		
+		if (player1.x/256 > SCREEN_RES_X - HALF_PLAYER_SIZE) { player1.x = 256*(SCREEN_RES_X - HALF_PLAYER_SIZE); }
+		if (player1.y/256 > SCREEN_RES_Y - HALF_PLAYER_SIZE) { player1.y = 256*(SCREEN_RES_Y - HALF_PLAYER_SIZE); }
 
-	
-	// check for dumpster collision
-	if (player1.y/256 < DUMPSTER_BOTTOM_BOUND + 8 && player1.y/256 > DUMPSTER_TOP_BOUND + 16){
-		if (player1.x/256 < DUMPSTER_1_RIGHT_BOUND + 8){
-			player1.x = original_1x;
-			player1.y = original_1y;
-		} else if (player1.x/256 > DUMPSTER_2_LEFT_BOUND + 8){
-			player1.x = original_1x;
-			player1.y = original_1y;
+		
+		// check for dumpster collision
+		if (player1.y/256 < DUMPSTER_BOTTOM_BOUND + 8 && player1.y/256 > DUMPSTER_TOP_BOUND + 16){
+			if (player1.x/256 < DUMPSTER_1_RIGHT_BOUND + 8){
+				player1.x = original_1x;
+				player1.y = original_1y;
+			} else if (player1.x/256 > DUMPSTER_2_LEFT_BOUND + 8){
+				player1.x = original_1x;
+				player1.y = original_1y;
+			}
+		}
+		
+		if (JOY_BTN_A(pad1.press) && player1.selected != ~0){
+			ARENA.trash.player[player1.selected] = 1;
+			player1.hands_free = false;
+		}
+		
+		if(JOY_BTN_A(pad1.release)){
+			ARENA.trash.throw_anim[player1.selected] = THROW_TICKS;
+			ARENA.trash.throw_dir[player1.selected] = player1.player_direction;
+			ARENA.trash.player[player1.selected] = 0;
+			player1.hands_free = true;
+			player1.selected = ~0;
 		}
 	}
 	
-	if (JOY_BTN_A(pad1.press) && player1.selected != ~0){
-		ARENA.trash.player[player1.selected] = 1;
-		player1.hands_free = false;
-	}
-	
-	if(JOY_BTN_A(pad1.release)){
-		ARENA.trash.throw_anim[player1.selected] = THROW_TICKS;
-		ARENA.trash.throw_dir[player1.selected] = player1.player_direction;
-		ARENA.trash.player[player1.selected] = 0;
-		player1.hands_free = true;
-		player1.selected = ~0;
-	}
-	
-	if(JOY_LEFT (pad2.value)) { player2.x -= speed2; player2.player_direction = DIR_LEFT; }
-	if(JOY_RIGHT(pad2.value)) { player2.x += speed2; player2.player_direction = DIR_RIGHT; }
-	if(JOY_DOWN (pad2.value)) { player2.y += speed2; player2.player_direction = DIR_DOWN; }
-	if(JOY_UP   (pad2.value)) { player2.y -= speed2; player2.player_direction = DIR_UP; }
-	// if(JOY_BTN_A(pad2.value)) { add_score_player2(1); } // TODO Delete, right now just a test for score
-	if(pad2.value & JOY_DPAD_MASK){
-		player2.anim_ticks++;
-		if(player2.anim_ticks/PLAYER_TICKS_PER_FRAME == 3) player2.anim_ticks = 0;
+	if(player2.stun_ticks){
+		player2.stun_ticks--;
 	} else {
-		player2.anim_ticks = PLAYER_TICKS_PER_FRAME;
-	}
-	
-	// Clamp player movement never goes oob
-	if (player2.x/256 < HALF_PLAYER_SIZE) { player2.x = 256*HALF_PLAYER_SIZE; }
-	if (player2.y/256 < HALF_PLAYER_SIZE) { player2.y = 256*HALF_PLAYER_SIZE; }
-
-	if (player2.x/256 > SCREEN_RES_X - HALF_PLAYER_SIZE) { player2.x = 256*(SCREEN_RES_X - HALF_PLAYER_SIZE); }
-	if (player2.y/256 > SCREEN_RES_Y - HALF_PLAYER_SIZE) { player2.y = 256*(SCREEN_RES_Y - HALF_PLAYER_SIZE); }
-
-	
-	// check for dumpster collision
-	if (player2.y/256 < DUMPSTER_BOTTOM_BOUND + 8 && player2.y/256 > DUMPSTER_TOP_BOUND + 16){
-		if (player2.x/256 < DUMPSTER_1_RIGHT_BOUND + 8){
-			player2.x = original_2x;
-			player2.y = original_2y;
-		} else if (player2.x/256 > DUMPSTER_2_LEFT_BOUND + 8){
-			player2.x = original_2x;
-			player2.y = original_2y;
+		if(JOY_LEFT (pad2.value)) { player2.x -= speed2; player2.player_direction = DIR_LEFT; }
+		if(JOY_RIGHT(pad2.value)) { player2.x += speed2; player2.player_direction = DIR_RIGHT; }
+		if(JOY_DOWN (pad2.value)) { player2.y += speed2; player2.player_direction = DIR_DOWN; }
+		if(JOY_UP   (pad2.value)) { player2.y -= speed2; player2.player_direction = DIR_UP; }
+		// if(JOY_BTN_A(pad2.value)) { add_score_player2(1); } // TODO Delete, right now just a test for score
+		if(pad2.value & JOY_DPAD_MASK){
+			player2.anim_ticks++;
+			if(player2.anim_ticks/PLAYER_TICKS_PER_FRAME == 3) player2.anim_ticks = 0;
+		} else {
+			player2.anim_ticks = PLAYER_TICKS_PER_FRAME;
 		}
-	}
-	
-	if (JOY_BTN_A(pad2.press) && player2.selected != ~0){
-		ARENA.trash.player[player2.selected] = 2;
-		player2.hands_free = false;
-	}
-	
-	if(JOY_BTN_A(pad2.release)){
-		ARENA.trash.throw_anim[player2.selected] = THROW_TICKS;
-		ARENA.trash.throw_dir[player2.selected] = player2.player_direction;
-		ARENA.trash.player[player2.selected] = 0;
-		player2.hands_free = true;
-		player2.selected = ~0;
+		
+		// Clamp player movement never goes oob
+		if (player2.x/256 < HALF_PLAYER_SIZE) { player2.x = 256*HALF_PLAYER_SIZE; }
+		if (player2.y/256 < HALF_PLAYER_SIZE) { player2.y = 256*HALF_PLAYER_SIZE; }
+
+		if (player2.x/256 > SCREEN_RES_X - HALF_PLAYER_SIZE) { player2.x = 256*(SCREEN_RES_X - HALF_PLAYER_SIZE); }
+		if (player2.y/256 > SCREEN_RES_Y - HALF_PLAYER_SIZE) { player2.y = 256*(SCREEN_RES_Y - HALF_PLAYER_SIZE); }
+
+		
+		// check for dumpster collision
+		if (player2.y/256 < DUMPSTER_BOTTOM_BOUND + 8 && player2.y/256 > DUMPSTER_TOP_BOUND + 16){
+			if (player2.x/256 < DUMPSTER_1_RIGHT_BOUND + 8){
+				player2.x = original_2x;
+				player2.y = original_2y;
+			} else if (player2.x/256 > DUMPSTER_2_LEFT_BOUND + 8){
+				player2.x = original_2x;
+				player2.y = original_2y;
+			}
+		}
+		
+		if (JOY_BTN_A(pad2.press) && player2.selected != ~0){
+			ARENA.trash.player[player2.selected] = 2;
+			player2.hands_free = false;
+		}
+		
+		if(JOY_BTN_A(pad2.release)){
+			ARENA.trash.throw_anim[player2.selected] = THROW_TICKS;
+			ARENA.trash.throw_dir[player2.selected] = player2.player_direction;
+			ARENA.trash.player[player2.selected] = 0;
+			player2.hands_free = true;
+			player2.selected = ~0;
+		}
 	}
 }
 
@@ -757,6 +795,7 @@ static void game_run(void){
 	init_arena();
 
 	// Set initial player positions. Might want to change later
+	memset(&player1, 0, sizeof(player1));
 	player1.x = 256*80;
 	player1.y = 256*120;
 	player1.hands_free = true;
@@ -767,6 +806,7 @@ static void game_run(void){
 	// triggers a redraw
 	add_score_player1(0);
 	
+	memset(&player2, 0, sizeof(player2));
 	player2.x = 256*(SCREEN_RES_X - 80);
 	player2.y = 256*120;
 	player2.hands_free = true;
@@ -794,8 +834,14 @@ static void game_run(void){
 		if (!update_game_timer()) break;
 		
 		// Draw player sprites
-		meta_spr(player1.x/256, player1.y/256, 0, PLAYER_ANIMS[player1.player_direction][player1.anim_ticks/PLAYER_TICKS_PER_FRAME]);
-		meta_spr(player2.x/256, player2.y/256, 0, PLAYER_ANIMS[player2.player_direction][player2.anim_ticks/PLAYER_TICKS_PER_FRAME]);
+		if(player1.stun_ticks){
+		} else {
+			meta_spr(player1.x/256, player1.y/256, 0, PLAYER_ANIMS[player1.player_direction][player1.anim_ticks/PLAYER_TICKS_PER_FRAME]);
+		}
+		if(player2.stun_ticks){
+		} else {
+			meta_spr(player2.x/256, player2.y/256, 0, PLAYER_ANIMS[player2.player_direction][player2.anim_ticks/PLAYER_TICKS_PER_FRAME]);
+		}
 
 		draw_sparkles();
 		
@@ -973,7 +1019,7 @@ void main(void){
 	px_debug_hex_addr = NT_ADDR(0, 3, 3);
 	
 	// Jump to the splash screen state.
-	igda_screen();
-	// game_run();
+	// igda_screen();
+	game_run();
 	
 }
