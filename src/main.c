@@ -136,6 +136,9 @@ struct {
 		u8 type[MAX_TRASH];
 		u8 x[MAX_TRASH];
 		u8 y[MAX_TRASH];
+		
+		// counts down to 0 during the fall animation
+		u8  fall_anim[MAX_TRASH];
 	} trash;
 	
 	// horizontal spans with trash in them
@@ -147,6 +150,7 @@ static void drop_trash(u8 x, u8 y, u8 type){
 	ARENA.trash.x[idx] = 16*(x + (16 - 8)/2);
 	ARENA.trash.y[idx] = 16*(y + (15 - MAX_TRASH)/2);
 	ARENA.trash.type[idx] = type;
+	ARENA.trash.fall_anim[idx] = 255;
 	ARENA.trash.count++;
 	ARENA.occupied[y] = true;
 }
@@ -167,8 +171,14 @@ static void update_arena(void){
 
 static void draw_arena(){
 	for(idx = 0; idx < ARENA.trash.count; idx++){
-		meta_spr(ARENA.trash.x[idx], ARENA.trash.y[idx], TRASH_PAL[ARENA.trash.type[idx]], TRASH_METAS[ARENA.trash.type[idx]]);
-		// meta_spr(ARENA.trash.x[idx], ARENA.trash.y[idx], 1, TRASH_BAG_ANIM[px_ticks/4 % 4]);
+		if(ARENA.trash.fall_anim[idx]){
+			if(ARENA.trash.y[idx] > ARENA.trash.fall_anim[idx]){
+				meta_spr(ARENA.trash.x[idx], ARENA.trash.y[idx] - ARENA.trash.fall_anim[idx], 1, TRASH_BAG_ANIM[px_ticks/4 % 4]);
+			}
+			ARENA.trash.fall_anim[idx]--;
+		} else {
+			meta_spr(ARENA.trash.x[idx], ARENA.trash.y[idx], TRASH_PAL[ARENA.trash.type[idx]], TRASH_METAS[ARENA.trash.type[idx]]);
+		}
 	}
 }
 
