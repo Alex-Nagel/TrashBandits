@@ -18,6 +18,9 @@
 
 #define SECONDS_BETWEEN_GOAL_CHANGE 15
 
+#define SPARKLE_TICKS_PER_FRAME 4
+#define SPARKLE_TICK_FRAMES 5
+
 #define DUMPSTER_TOP_BOUND 64
 #define DUMPSTER_BOTTOM_BOUND 160
 #define DUMPSTER_1_RIGHT_BOUND 64
@@ -108,6 +111,38 @@ static const u8* TRASH_BAG_ANIM[] = {
 	TRASH_BAG1_META,
 	TRASH_BAG2_META,
 	TRASH_BAG1_META
+};
+
+static const u8 POOF1_META[] = {
+	0, 0, 0x20, 0,
+	8, 0, 0x21, 0,
+	0, 8, 0x30, 0,
+	8, 8, 0x31, 0,
+	128,
+};
+
+static const u8 POOF2_META[] = {
+	0, 0, 0x22, 0,
+	8, 0, 0x23, 0,
+	0, 8, 0x32, 0,
+	8, 8, 0x33, 0,
+	128,
+};
+
+static const u8 POOF3_META[] = {
+	0, 0, 0x24, 0,
+	8, 0, 0x25, 0,
+	0, 8, 0x34, 0,
+	8, 8, 0x35, 0,
+	128,
+};
+
+static const u8* POOF_ANIM[] = {
+	POOF1_META,
+	POOF2_META,
+	POOF3_META,
+	POOF2_META,
+	POOF1_META,
 };
 
 static const u8 TRASH_APPLE_META[] = {
@@ -204,6 +239,10 @@ struct Player {
 	u8 selected;
 
 	u8 goal_trash_type;
+
+	u8 sparkle_anim_ticks;
+	u8 sparkle_x;
+	u8 sparkle_y;
 };
 
 struct Player player1;
@@ -217,7 +256,7 @@ static void drop_trash(u8 idx){
 	ARENA.trash.x[idx] = 256*16*(ix + 4);
 	ARENA.trash.y[idx] = 256*16*(idx + 4);
 	ARENA.trash.type[idx] = rand()%4;
-	ARENA.trash.fall_anim[idx] = 180;
+	ARENA.trash.fall_anim[idx] = 160 + (rand() % 64);
 	ARENA.trash.player[idx] = 0;
 }
 
@@ -264,6 +303,12 @@ static void update_arena(void){
 					// drop_trash(idx);
 					if (ARENA.trash.x[idx] / 256 < DUMPSTER_1_RIGHT_BOUND){
 						matching = ARENA.trash.type[idx] == player1.goal_trash_type;
+
+						// Create sparkle effect
+						player1.sparkle_anim_ticks = SPARKLE_TICKS_PER_FRAME * SPARKLE_TICK_FRAMES;
+						player1.sparkle_x = ARENA.trash.x[idx] / 256;
+						player1.sparkle_y = ARENA.trash.y[idx] / 256;
+
 						drop_trash(idx);
 
 						// Check for matching goal
@@ -426,6 +471,13 @@ static void draw_arena(){
 	if(idx0 == MAX_TRASH) idx0 = 0;
 }
 
+static void draw_sparkles(){
+	if (player1.sparkle_anim_ticks > 0){
+		meta_spr(player1.sparkle_x, player1.sparkle_y, 1, POOF_ANIM[player1.sparkle_anim_ticks / SPARKLE_TICKS_PER_FRAME % SPARKLE_TICKS_PER_FRAME]);
+		player1.sparkle_anim_ticks--;
+	}
+}
+
 // Unfortunately didn't get to retain the ascii tiles
 // Need to translate the digits and ':' into tiles
 char text_buffer[16];
@@ -578,6 +630,8 @@ static void update_reticles(){
 	u8 grid1_y;
 	u8 grid2_x;
 	u8 grid2_y;
+	bool reticle_1_active = false;
+	bool reticle_2_active = false;
 
 	// Draw player1 reticle
 	playerx = player1.x/256;
@@ -626,12 +680,18 @@ static void update_reticles(){
 		trash_y = ARENA.trash.y[idx] / (16*256);
 
 		if (trash_x == grid1_x && trash_y == grid1_y && ARENA.trash.player[idx] == 0 && player1.hands_free){
-			if(px_ticks % 2 == 0) meta_spr(trash1_global_x, trash1_global_y, 0, RETICLE_META);
+			if(px_ticks % 2 == 0 && !reticle_1_active) {
+				meta_spr(trash1_global_x, trash1_global_y, 0, RETICLE_META);
+				reticle_1_active = true;
+			}
 			player1.selected = idx;
 		}
 
 		if (trash_x == grid2_x && trash_y == grid2_y && ARENA.trash.player[idx] == 0 && player2.hands_free){
-			if(px_ticks % 2 == 1) meta_spr(trash2_global_x, trash2_global_y, 0, RETICLE_META);
+			if(px_ticks % 2 == 1 && !reticle_2_active) {
+				meta_spr(trash2_global_x, trash2_global_y, 0, RETICLE_META);
+				reticle_2_active = true;
+			}
 			player2.selected = idx;
 		}
 	}
@@ -703,6 +763,7 @@ static void game_run(void){
 	player1.player_direction = DIR_RIGHT;
 	player1.score = 0;
 	player1.selected = ~0;
+	player1.sparkle_anim_ticks = 0;
 	// triggers a redraw
 	add_score_player1(0);
 	
@@ -712,11 +773,12 @@ static void game_run(void){
 	player2.player_direction = DIR_LEFT;
 	player2.score = 0;
 	player2.selected = ~0;
+	player2.sparkle_anim_ticks = 0;
 	// triggers a redraw
 	add_score_player2(0);
 
 	// Length of a round, change if needed (Assumes that minutes are < 10 and seconds < 60)
-	minutes_timer = 2;
+	minutes_timer = 1;
 	seconds_timer = 30;
 	frames_timer = 60; // Keep this as 60
 	change_goal_seconds_timer = SECONDS_BETWEEN_GOAL_CHANGE;
@@ -735,6 +797,8 @@ static void game_run(void){
 		meta_spr(player1.x/256, player1.y/256, 0, PLAYER_ANIMS[player1.player_direction][player1.anim_ticks/PLAYER_TICKS_PER_FRAME]);
 		meta_spr(player2.x/256, player2.y/256, 0, PLAYER_ANIMS[player2.player_direction][player2.anim_ticks/PLAYER_TICKS_PER_FRAME]);
 
+		draw_sparkles();
+		
 		// Draw goal trash sprites (may want to change position / flicker later, but if in corners don't have to worry about that as much)
 		meta_spr(16, 188, TRASH_PAL[player1.goal_trash_type], TRASH_METAS[player1.goal_trash_type]);
 		meta_spr(224, 188, TRASH_PAL[player2.goal_trash_type], TRASH_METAS[player2.goal_trash_type]);
