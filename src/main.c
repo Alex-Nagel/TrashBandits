@@ -446,14 +446,14 @@ static draw_num(u8 x, u8 y){
 static void add_score_player1(u8 score_increase){
 	player1.score += score_increase;
 	sprintf(text_buffer, "%04d00", player1.score);
-	draw_num(2, 27);
+	draw_num(2, 26);
 }
 
 // Adding 1 point is equivalent to adding 100 points in the ui. Maximums in-game score: 999900
 static void add_score_player2(u8 score_increase){
 	player2.score += score_increase;
 	sprintf(text_buffer, "%04d00", player2.score);
-	draw_num(24, 27);
+	draw_num(24, 26);
 	
 }
 
@@ -734,8 +734,8 @@ static void game_run(void){
 		meta_spr(player2.x, player2.y, 0, PLAYER_ANIMS[player2.player_direction][player2.anim_ticks/PLAYER_TICKS_PER_FRAME]);
 
 		// Draw goal trash sprites (may want to change position / flicker later, but if in corners don't have to worry about that as much)
-		meta_spr(16, 200, TRASH_PAL[player1.goal_trash_type], TRASH_METAS[player1.goal_trash_type]);
-		meta_spr(224, 200, TRASH_PAL[player2.goal_trash_type], TRASH_METAS[player2.goal_trash_type]);
+		meta_spr(16, 188, TRASH_PAL[player1.goal_trash_type], TRASH_METAS[player1.goal_trash_type]);
+		meta_spr(224, 188, TRASH_PAL[player2.goal_trash_type], TRASH_METAS[player2.goal_trash_type]);
 		
 		update_reticles();
 		draw_arena();
