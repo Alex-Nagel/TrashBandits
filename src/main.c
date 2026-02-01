@@ -139,6 +139,23 @@ static const u8 RETICLE_META[] = {
 	8, 8, 0x71, 0,
 	128,
 };
+
+static const u8 SAD_FACE_META[] = {
+	0, 0, 0x0A, 0,
+	8, 0, 0x0B, 0,
+	0, 8, 0x1A, 0,
+	8, 8, 0x1B, 0,
+	128,
+};
+
+static const u8 HAPPY_FACE_META[] = {
+	0, 0, 0x0C, 0,
+	8, 0, 0x0D, 0,
+	0, 8, 0x1C, 0,
+	8, 8, 0x1D, 0,
+	128,
+};
+
 static u8 TRASH_PAL[] = {2, 1, 3, 2};
 
 #define MAX_TRASH 10
@@ -689,9 +706,9 @@ static void game_over_screen(){
 	px_spr_clear();
 	
 	{
+		u8 winner = get_winner();
 		// Draw who winner is
 		char buffer[10];
-		u8 winner = get_winner();
 		if (winner == 0)      sprintf(buffer, "Tie! Both Win!");
 		else if (winner == 1) sprintf(buffer, "Player 1 Wins!");
 		else if (winner == 2) sprintf(buffer, "Player 2 Wins!");
@@ -711,18 +728,32 @@ static void game_over_screen(){
 
 		sprintf(buffer, "%04d00", player2.score);
 		px_buffer_blit(NT_ADDR(0, 22, 16), buffer, strlen(buffer));
+
+		
 	}
 	
 	while (true)
 	{
+		u8 winner = get_winner();
 		read_gamepads();
 		
 		if (JOY_START(pad1.value) || JOY_START(pad2.value)) {
 			game_run();
 		}
 
+		
+		// Show happy/sad faces for winner/loser
+		if       (winner == 0){ // Tie
+			meta_spr(56, 152, 0, HAPPY_FACE_META);
+			meta_spr(184, 152, 0, HAPPY_FACE_META);
+		}else if (winner == 1){ // 1 wins
+			meta_spr(56, 152, 0, HAPPY_FACE_META);
+			meta_spr(184, 152, 0, SAD_FACE_META);
+		}else if (winner == 2){ // 2 wins
+			meta_spr(56, 152, 0, SAD_FACE_META);
+			meta_spr(184, 152, 0, HAPPY_FACE_META);
+		}
 
-		// TODO Have some more stuff so not empty, maybe happy and sad raccoons for winner / loser
 		
 		px_spr_end();
 		px_wait_nmi();
