@@ -175,7 +175,7 @@ static const u8 HAPPY_FACE_META[] = {
 
 static u8 TRASH_PAL[] = {2, 1, 3, 2};
 
-#define MAX_TRASH 10
+#define MAX_TRASH 8
 struct {
 	struct {
 		u8 type[MAX_TRASH];
@@ -214,10 +214,10 @@ static void add_score_player2(u8 score_increase);
 
 static void drop_trash(u8 idx){
 	ix = rand()%8;
-	ARENA.trash.x[idx] = 256*16*(ix + (16 - 8)/2);
-	ARENA.trash.y[idx] = 256*16*(idx + (15 - MAX_TRASH)/2);
+	ARENA.trash.x[idx] = 256*16*(ix + 4);
+	ARENA.trash.y[idx] = 256*16*(idx + 4);
 	ARENA.trash.type[idx] = rand()%4;
-	ARENA.trash.fall_anim[idx] = 255;
+	ARENA.trash.fall_anim[idx] = 180;
 	ARENA.trash.player[idx] = 0;
 }
 
