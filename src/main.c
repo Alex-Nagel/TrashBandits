@@ -551,6 +551,23 @@ static const u8 PLAYER_STUN_META[] = {
 	128,
 };
 
+static const u8 PLAYER_SHADOW0_META[] = {
+	-7, 3, 0x3C, 0,
+	 1, 3, 0x3D, 0,
+	128,
+};
+
+static const u8 PLAYER_SHADOW1_META[] = {
+	-7, 3, 0x2C, 0,
+	 1, 3, 0x2D, 0,
+	128,
+};
+
+static const u8* PLAYER_SHADOW_ANIM[] = {
+	PLAYER_SHADOW0_META,
+	PLAYER_SHADOW1_META,
+};
+
 static const u8* PLAYER_LEFT_ANIM[] = {PLAYER_LEFT0_META, PLAYER_LEFT1_META, PLAYER_LEFT2_META};
 static const u8* PLAYER_RIGHT_ANIM[] = {PLAYER_RIGHT0_META, PLAYER_RIGHT1_META, PLAYER_RIGHT2_META};
 static const u8* PLAYER_DOWN_ANIM[] = {PLAYER_DOWN0_META, PLAYER_DOWN1_META, PLAYER_DOWN2_META};
@@ -935,7 +952,8 @@ static void game_run(void){
 			if(player1.stun_ticks){
 				meta_spr(player1.x/256, player1.y/256, 0, PLAYER_STUN_META);
 			} else {
-					meta_spr(player1.x/256, player1.y/256, 0, PLAYER_ANIMS[player1.player_direction][player1.anim_ticks/PLAYER_TICKS_PER_FRAME]);
+				meta_spr(player1.x/256, player1.y/256, 0, PLAYER_ANIMS[player1.player_direction][player1.anim_ticks/PLAYER_TICKS_PER_FRAME]);
+				if(px_ticks % 2 == 0) meta_spr(player1.x/256, player1.y/256, 0, PLAYER_SHADOW_ANIM[px_ticks/2 % 2]);
 			}
 		}
 		if(player2.invulnerable_ticks == 0 || px_ticks % 2 == 0){
@@ -943,6 +961,7 @@ static void game_run(void){
 				meta_spr(player2.x/256, player2.y/256, 0, PLAYER_STUN_META);
 			} else {
 				meta_spr(player2.x/256, player2.y/256, 0, PLAYER_ANIMS[player2.player_direction][player2.anim_ticks/PLAYER_TICKS_PER_FRAME]);
+				if(px_ticks % 2 == 1) meta_spr(player2.x/256, player2.y/256, 0, PLAYER_SHADOW_ANIM[px_ticks/2 % 2]);
 			}
 		}
 
