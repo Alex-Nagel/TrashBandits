@@ -193,8 +193,8 @@ struct {
 } ARENA;
 
 struct Player {
-	u8 x;
-	u8 y;
+	u16 x;
+	u16 y;
 	u8 player_direction;
 
 	int score;
@@ -287,13 +287,13 @@ static void update_arena(void){
 		}
 		
 		if(ARENA.trash.player[idx] == 1){
-			ARENA.trash.x[idx] = 256*(player1.x -  8);
-			ARENA.trash.y[idx] = 256*(player1.y - 24);
+			ARENA.trash.x[idx] = player1.x -  8*256;
+			ARENA.trash.y[idx] = player1.y - 24*256;
 		}
 		
 		if(ARENA.trash.player[idx] == 2){
-			ARENA.trash.x[idx] = 256*(player2.x -  8);
-			ARENA.trash.y[idx] = 256*(player2.y - 24);
+			ARENA.trash.x[idx] = player2.x -  8*256;
+			ARENA.trash.y[idx] = player2.y - 24*256;
 		}
 	}
 }
@@ -462,15 +462,17 @@ static void add_score_player2(u8 score_increase){
 #define PLAYER_TICKS_PER_FRAME 8
 
 static void update_player_movement(){
-	u8 original_1x = player1.x;
-	u8 original_1y = player1.y;
-	u8 original_2x = player2.x;
-	u8 original_2y = player2.y;
+	u16 original_1x = player1.x;
+	u16 original_1y = player1.y;
+	u16 speed1 = player1.hands_free ? 1*256 : 3*256/4;
+	u16 original_2x = player2.x;
+	u16 original_2y = player2.y;
+	u16 speed2 = player2.hands_free ? 1*256 : 3*256/4;
 
-	if(JOY_LEFT (pad1.value)) { player1.x -= 1; player1.player_direction = DIR_LEFT; }
-	if(JOY_RIGHT(pad1.value)) { player1.x += 1; player1.player_direction = DIR_RIGHT; }
-	if(JOY_DOWN (pad1.value)) { player1.y += 1; player1.player_direction = DIR_DOWN; }
-	if(JOY_UP   (pad1.value)) { player1.y -= 1; player1.player_direction = DIR_UP; }
+	if(JOY_LEFT (pad1.value)) { player1.x -= speed1; player1.player_direction = DIR_LEFT; }
+	if(JOY_RIGHT(pad1.value)) { player1.x += speed1; player1.player_direction = DIR_RIGHT; }
+	if(JOY_DOWN (pad1.value)) { player1.y += speed1; player1.player_direction = DIR_DOWN; }
+	if(JOY_UP   (pad1.value)) { player1.y -= speed1; player1.player_direction = DIR_UP; }
 	// if(JOY_BTN_A(pad1.value)) { add_score_player1(1); } // TODO Delete, right now just a test for score
 	if(pad1.value & JOY_DPAD_MASK){
 		player1.anim_ticks++;
@@ -480,19 +482,19 @@ static void update_player_movement(){
 	}
 
 	// Clamp player movement never goes oob
-	if (player1.x < HALF_PLAYER_SIZE) { player1.x = HALF_PLAYER_SIZE; }
-	if (player1.y < HALF_PLAYER_SIZE) { player1.y = HALF_PLAYER_SIZE; }
+	if (player1.x/256 < HALF_PLAYER_SIZE) { player1.x = 256*HALF_PLAYER_SIZE; }
+	if (player1.y/256 < HALF_PLAYER_SIZE) { player1.y = 256*HALF_PLAYER_SIZE; }
 	
-	if (player1.x > SCREEN_RES_X - HALF_PLAYER_SIZE) { player1.x = SCREEN_RES_X - HALF_PLAYER_SIZE; }
-	if (player1.y > SCREEN_RES_Y - HALF_PLAYER_SIZE) { player1.y = SCREEN_RES_Y - HALF_PLAYER_SIZE; }
+	if (player1.x/256 > SCREEN_RES_X - HALF_PLAYER_SIZE) { player1.x = 256*(SCREEN_RES_X - HALF_PLAYER_SIZE); }
+	if (player1.y/256 > SCREEN_RES_Y - HALF_PLAYER_SIZE) { player1.y = 256*(SCREEN_RES_Y - HALF_PLAYER_SIZE); }
 
 	
 	// check for dumpster collision
-	if (player1.y < DUMPSTER_BOTTOM_BOUND + 8 && player1.y > DUMPSTER_TOP_BOUND + 16){
-		if (player1.x < DUMPSTER_1_RIGHT_BOUND + 8){
+	if (player1.y/256 < DUMPSTER_BOTTOM_BOUND + 8 && player1.y/256 > DUMPSTER_TOP_BOUND + 16){
+		if (player1.x/256 < DUMPSTER_1_RIGHT_BOUND + 8){
 			player1.x = original_1x;
 			player1.y = original_1y;
-		} else if (player1.x > DUMPSTER_2_LEFT_BOUND + 8){
+		} else if (player1.x/256 > DUMPSTER_2_LEFT_BOUND + 8){
 			player1.x = original_1x;
 			player1.y = original_1y;
 		}
@@ -511,10 +513,10 @@ static void update_player_movement(){
 		player1.selected = ~0;
 	}
 	
-	if(JOY_LEFT (pad2.value)) { player2.x -= 1; player2.player_direction = DIR_LEFT; }
-	if(JOY_RIGHT(pad2.value)) { player2.x += 1; player2.player_direction = DIR_RIGHT; }
-	if(JOY_DOWN (pad2.value)) { player2.y += 1; player2.player_direction = DIR_DOWN; }
-	if(JOY_UP   (pad2.value)) { player2.y -= 1; player2.player_direction = DIR_UP; }
+	if(JOY_LEFT (pad2.value)) { player2.x -= speed2; player2.player_direction = DIR_LEFT; }
+	if(JOY_RIGHT(pad2.value)) { player2.x += speed2; player2.player_direction = DIR_RIGHT; }
+	if(JOY_DOWN (pad2.value)) { player2.y += speed2; player2.player_direction = DIR_DOWN; }
+	if(JOY_UP   (pad2.value)) { player2.y -= speed2; player2.player_direction = DIR_UP; }
 	// if(JOY_BTN_A(pad2.value)) { add_score_player2(1); } // TODO Delete, right now just a test for score
 	if(pad2.value & JOY_DPAD_MASK){
 		player2.anim_ticks++;
@@ -524,19 +526,19 @@ static void update_player_movement(){
 	}
 	
 	// Clamp player movement never goes oob
-	if (player2.x < HALF_PLAYER_SIZE) { player2.x = HALF_PLAYER_SIZE; }
-	if (player2.y < HALF_PLAYER_SIZE) { player2.y = HALF_PLAYER_SIZE; }
+	if (player2.x/256 < HALF_PLAYER_SIZE) { player2.x = 256*HALF_PLAYER_SIZE; }
+	if (player2.y/256 < HALF_PLAYER_SIZE) { player2.y = 256*HALF_PLAYER_SIZE; }
 
-	if (player2.x > SCREEN_RES_X - HALF_PLAYER_SIZE) { player2.x = SCREEN_RES_X - HALF_PLAYER_SIZE; }
-	if (player2.y > SCREEN_RES_Y - HALF_PLAYER_SIZE) { player2.y = SCREEN_RES_Y - HALF_PLAYER_SIZE; }
+	if (player2.x/256 > SCREEN_RES_X - HALF_PLAYER_SIZE) { player2.x = 256*(SCREEN_RES_X - HALF_PLAYER_SIZE); }
+	if (player2.y/256 > SCREEN_RES_Y - HALF_PLAYER_SIZE) { player2.y = 256*(SCREEN_RES_Y - HALF_PLAYER_SIZE); }
 
 	
 	// check for dumpster collision
-	if (player2.y < DUMPSTER_BOTTOM_BOUND + 8 && player2.y > DUMPSTER_TOP_BOUND + 16){
-		if (player2.x < DUMPSTER_1_RIGHT_BOUND + 8){
+	if (player2.y/256 < DUMPSTER_BOTTOM_BOUND + 8 && player2.y/256 > DUMPSTER_TOP_BOUND + 16){
+		if (player2.x/256 < DUMPSTER_1_RIGHT_BOUND + 8){
 			player2.x = original_2x;
 			player2.y = original_2y;
-		} else if (player2.x > DUMPSTER_2_LEFT_BOUND + 8){
+		} else if (player2.x/256 > DUMPSTER_2_LEFT_BOUND + 8){
 			player2.x = original_2x;
 			player2.y = original_2y;
 		}
@@ -578,8 +580,8 @@ static void update_reticles(){
 	u8 grid2_y;
 
 	// Draw player1 reticle
-	playerx = player1.x;
-	playery = player1.y;
+	playerx = player1.x/256;
+	playery = player1.y/256;
 
 	if (player1.player_direction == DIR_LEFT) playerx -= 16;
 	if (player1.player_direction == DIR_RIGHT) playerx += 16;
@@ -595,8 +597,8 @@ static void update_reticles(){
 	// meta_spr(x, y, 0, RETICLE_META);
 	
 	// Draw player2 reticle
-	playerx = player2.x;
-	playery = player2.y;
+	playerx = player2.x/256;
+	playery = player2.y/256;
 
 	if (player2.player_direction == DIR_LEFT) playerx -= 16;
 	if (player2.player_direction == DIR_RIGHT) playerx += 16;
@@ -695,8 +697,8 @@ static void game_run(void){
 	init_arena();
 
 	// Set initial player positions. Might want to change later
-	player1.x = 80;
-	player1.y = 120;
+	player1.x = 256*80;
+	player1.y = 256*120;
 	player1.hands_free = true;
 	player1.player_direction = DIR_RIGHT;
 	player1.score = 0;
@@ -704,8 +706,8 @@ static void game_run(void){
 	// triggers a redraw
 	add_score_player1(0);
 	
-	player2.x = SCREEN_RES_X - 80;
-	player2.y = 120;
+	player2.x = 256*(SCREEN_RES_X - 80);
+	player2.y = 256*120;
 	player2.hands_free = true;
 	player2.player_direction = DIR_LEFT;
 	player2.score = 0;
@@ -730,8 +732,8 @@ static void game_run(void){
 		if (!update_game_timer()) break;
 		
 		// Draw player sprites
-		meta_spr(player1.x, player1.y, 0, PLAYER_ANIMS[player1.player_direction][player1.anim_ticks/PLAYER_TICKS_PER_FRAME]);
-		meta_spr(player2.x, player2.y, 0, PLAYER_ANIMS[player2.player_direction][player2.anim_ticks/PLAYER_TICKS_PER_FRAME]);
+		meta_spr(player1.x/256, player1.y/256, 0, PLAYER_ANIMS[player1.player_direction][player1.anim_ticks/PLAYER_TICKS_PER_FRAME]);
+		meta_spr(player2.x/256, player2.y/256, 0, PLAYER_ANIMS[player2.player_direction][player2.anim_ticks/PLAYER_TICKS_PER_FRAME]);
 
 		// Draw goal trash sprites (may want to change position / flicker later, but if in corners don't have to worry about that as much)
 		meta_spr(16, 188, TRASH_PAL[player1.goal_trash_type], TRASH_METAS[player1.goal_trash_type]);
