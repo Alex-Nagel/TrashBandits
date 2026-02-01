@@ -609,6 +609,7 @@ static void game_run(void){
 		px_spr_table(1);
 		// Load the tilemap into nametable 0.
 		px_lz4_to_vram(NT_ADDR(0, 0, 0), MAP_DUMP);
+		PX.scroll_x = -2;
 	} px_ppu_sync_enable();
 	
 	// music_play(0);
@@ -684,6 +685,7 @@ static void game_over_screen(){
 		// clear the screen
 		px_addr(NT_ADDR(0, 0, 0));
 		px_fill(1024, 0);
+		PX.scroll_x = 0;
 	} px_ppu_sync_enable();
 
 	px_spr_clear();
@@ -741,6 +743,7 @@ static void igda_screen(){
 		px_spr_table(0);
 		
 		px_lz4_to_vram(NT_ADDR(0, 0, 0), MAP_IGDA);
+		PX.scroll_x = 0;
 	} px_ppu_sync_enable();
 
 	px_spr_clear();
