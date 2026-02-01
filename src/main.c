@@ -141,11 +141,12 @@ struct {
 	struct {
 		int count;
 		u8 type[MAX_TRASH];
-		u8 x[MAX_TRASH];
-		u8 y[MAX_TRASH];
+		u16 x[MAX_TRASH];
+		u16 y[MAX_TRASH];
 		
 		// counts down to 0 during the fall animation
-		u8  fall_anim[MAX_TRASH];
+		u8 fall_anim[MAX_TRASH];
+		u8 throw_anim[MAX_TRASH];
 		u8 player[MAX_TRASH]; // 0 if on ground, 1 if player 1 is picking it up, 2 for player 2
 	} trash;
 	
@@ -170,8 +171,8 @@ struct Player player2;
 
 static void drop_trash(u8 x, u8 y, u8 type){
 	idx = ARENA.trash.count;
-	ARENA.trash.x[idx] = 16*(x + (16 - 8)/2);
-	ARENA.trash.y[idx] = 16*(y + (15 - MAX_TRASH)/2);
+	ARENA.trash.x[idx] = 256*16*(x + (16 - 8)/2);
+	ARENA.trash.y[idx] = 256*16*(y + (15 - MAX_TRASH)/2);
 	ARENA.trash.type[idx] = type;
 	ARENA.trash.fall_anim[idx] = 1;
 	ARENA.trash.count++;
@@ -186,20 +187,42 @@ static void init_arena(void){
 	}
 }
 
+#define THROW_TICKS 10
+
 static void update_arena(void){
 	// TODO need initial trash
 	// TODO need timers for player goals
 	// TODO need timers for trash drops?
 	//   on a timer after player pickups?
 	for(idx = 0; idx < ARENA.trash.count; idx++){
+		if(ARENA.trash.fall_anim[idx]){
+			ARENA.trash.fall_anim[idx]--;
+		}
+			
+		if(ARENA.trash.throw_anim[idx]){
+			ARENA.trash.x[idx] += 4*256;
+			ARENA.trash.y[idx] += 80*(THROW_TICKS - ARENA.trash.throw_anim[idx]);
+			ARENA.trash.throw_anim[idx]--;
+			
+			// if ticks < num check for player collision
+			
+			if(ARENA.trash.throw_anim[idx] == 0){
+				// snap to nearest grid
+				ARENA.trash.x[idx] = (ARENA.trash.x[idx] + 8*256) & 0xF000;
+				ARENA.trash.y[idx] = (ARENA.trash.y[idx] + 8*256) & 0xF000;
+				
+				// TODO check landing area and award points
+			}
+		}
+		
 		if(ARENA.trash.player[idx] == 1){
-			ARENA.trash.x[idx] = player1.x - 8;
-			ARENA.trash.y[idx] = player1.y - 24;
+			ARENA.trash.x[idx] = 256*(player1.x -  8);
+			ARENA.trash.y[idx] = 256*(player1.y - 24);
 		}
 		
 		if(ARENA.trash.player[idx] == 2){
-			ARENA.trash.x[idx] = player2.x - 8;
-			ARENA.trash.y[idx] = player2.y - 24;
+			ARENA.trash.x[idx] = 256*(player2.x -  8);
+			ARENA.trash.y[idx] = 256*(player2.y - 24);
 		}
 	}
 }
@@ -316,11 +339,10 @@ static void draw_arena(){
 	for(idx = 0; idx < ARENA.trash.count; idx++){
 		if(ARENA.trash.fall_anim[idx]){
 			if(ARENA.trash.y[idx] > ARENA.trash.fall_anim[idx]){
-				meta_spr(ARENA.trash.x[idx], ARENA.trash.y[idx] - ARENA.trash.fall_anim[idx], 1, TRASH_BAG_ANIM[px_ticks/4 % 4]);
+				meta_spr(ARENA.trash.x[idx]/256, ARENA.trash.y[idx]/256 - ARENA.trash.fall_anim[idx], 1, TRASH_BAG_ANIM[px_ticks/4 % 4]);
 			}
-			ARENA.trash.fall_anim[idx]--;
 		} else {
-			meta_spr(ARENA.trash.x[idx], ARENA.trash.y[idx], TRASH_PAL[ARENA.trash.type[idx]], TRASH_METAS[ARENA.trash.type[idx]]);
+			meta_spr(ARENA.trash.x[idx]/256, ARENA.trash.y[idx]/256, TRASH_PAL[ARENA.trash.type[idx]], TRASH_METAS[ARENA.trash.type[idx]]);
 		}
 	}
 }
@@ -380,17 +402,16 @@ static void update_player_movement(){
 	if (player1.x > SCREEN_RES_X - HALF_PLAYER_SIZE) { player1.x = SCREEN_RES_X - HALF_PLAYER_SIZE; }
 	if (player1.y > SCREEN_RES_Y - HALF_PLAYER_SIZE) { player1.y = SCREEN_RES_Y - HALF_PLAYER_SIZE; }
 	
-	if (JOY_BTN_A(pad1.press) && player1.selected != -1){
+	if (JOY_BTN_A(pad1.press) && player1.selected != ~0){
 		ARENA.trash.player[player1.selected] = 1;
 		player1.hands_free = false;
 	}
 	
 	if(JOY_BTN_A(pad1.release)){
+		ARENA.trash.throw_anim[player1.selected] = THROW_TICKS;
+		ARENA.trash.player[player1.selected] = 0;
 		player1.hands_free = true;
-		idx = player1.selected;
-		ARENA.trash.x[idx] = (ARENA.trash.x[idx] + 0) & 0xFF;
-		ARENA.trash.y[idx] = (ARENA.trash.y[idx] + 0) & 0xFF;
-		ARENA.trash.player[idx] = 0;
+		player1.selected = ~0;
 	}
 	
 	if(JOY_LEFT (pad2.value)) { player2.x -= 1; player2.player_direction = DIR_LEFT; }
@@ -412,17 +433,16 @@ static void update_player_movement(){
 	if (player2.x > SCREEN_RES_X - HALF_PLAYER_SIZE) { player2.x = SCREEN_RES_X - HALF_PLAYER_SIZE; }
 	if (player2.y > SCREEN_RES_Y - HALF_PLAYER_SIZE) { player2.y = SCREEN_RES_Y - HALF_PLAYER_SIZE; }
 	
-	if (JOY_BTN_A(pad2.press) && player2.selected != -1){
+	if (JOY_BTN_A(pad2.press) && player2.selected != ~0){
 		ARENA.trash.player[player2.selected] = 2;
 		player2.hands_free = false;
 	}
 	
 	if(JOY_BTN_A(pad2.release)){
+		ARENA.trash.throw_anim[player2.selected] = THROW_TICKS;
+		ARENA.trash.player[player2.selected] = 0;
 		player2.hands_free = true;
-		idx = player2.selected;
-		ARENA.trash.x[idx] = (ARENA.trash.x[idx] + 0) & 0xFF;
-		ARENA.trash.y[idx] = (ARENA.trash.y[idx] + 0) & 0xFF;
-		ARENA.trash.player[idx] = 0;
+		player2.selected = ~0;
 	}
 }
 
@@ -474,13 +494,13 @@ static void update_reticles(){
 
 	// meta_spr(x, y, 0, RETICLE_META);
 
-	if(player1.hands_free) player1.selected = -1;
-	if(player2.hands_free) player2.selected = -1;
+	if(player1.hands_free) player1.selected = ~0;
+	if(player2.hands_free) player2.selected = ~0;
 	
 	// Check for pickup
 	for(idx = 0; idx < ARENA.trash.count; idx++){
-		trash_x = ARENA.trash.x[idx] / 16;
-		trash_y = ARENA.trash.y[idx] / 16;
+		trash_x = ARENA.trash.x[idx] / (16*256);
+		trash_y = ARENA.trash.y[idx] / (16*256);
 
 		if (trash_x == grid1_x && trash_y == grid1_y && ARENA.trash.player[idx] == 0 && player1.hands_free){
 			if(px_ticks % 2 == 0) meta_spr(trash1_global_x, trash1_global_y, 0, RETICLE_META);
@@ -550,6 +570,7 @@ static void game_run(void){
 	player1.hands_free = true;
 	player1.player_direction = DIR_RIGHT;
 	player1.score = 0;
+	player1.selected = ~0;
 	// triggers a redraw
 	add_score_player1(0);
 	
@@ -558,6 +579,7 @@ static void game_run(void){
 	player2.hands_free = true;
 	player2.player_direction = DIR_LEFT;
 	player2.score = 0;
+	player2.selected = ~0;
 	// triggers a redraw
 	add_score_player2(0);
 
