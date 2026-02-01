@@ -253,32 +253,42 @@ struct Player {
 	u8 y;
 	u8 player_direction;
 
-	int score1;
-	int score2;
-	int score3;
-	int score4;
+	int score;
 	u8 anim_ticks;
 };
 
 struct Player player1;
 struct Player player2;
 
+// Unfortunately didn't get to retain the ascii tiles
+// Need to translate the digits and ':' into tiles
+char text_buffer[16];
+static draw_num(u8 x, u8 y){
+	iy = strlen(text_buffer);
+	for(idx = 0; idx < iy; idx++){
+		if(text_buffer[idx] == ':'){
+			text_buffer[idx] = 0x7F;
+		} else {
+			text_buffer[idx] = text_buffer[idx] - ('0' - 0x75);
+		}
+	}
+	
+	px_buffer_blit(NT_ADDR(0, x, y), text_buffer, iy);
+}
+
 // Adding 1 point is equivalent to adding 100 points in the ui. Maximums in-game score: 999900
 static void add_score_player1(u8 score_increase){
-	player1.score1 += score_increase;
-	while (player1.score1 > 9) { player1.score1 -= 10; player1.score2 += 1; }
-	while (player1.score2 > 9) { player1.score2 -= 10; player1.score3 += 1; }
-	while (player1.score3 > 9) { player1.score3 -= 10; player1.score4 += 1; }
-	while (player1.score4 > 9) { player1.score4 -= 10; }
+	player1.score += score_increase;
+	sprintf(text_buffer, "%04d00", player1.score);
+	draw_num(2, 27);
 }
 
 // Adding 1 point is equivalent to adding 100 points in the ui. Maximums in-game score: 999900
 static void add_score_player2(u8 score_increase){
-	player2.score1 += score_increase;
-	while (player2.score1 > 9) { player2.score1 -= 10; player2.score2 += 1; }
-	while (player2.score2 > 9) { player2.score2 -= 10; player2.score3 += 1; }
-	while (player2.score3 > 9) { player2.score3 -= 10; player2.score4 += 1; }
-	while (player2.score4 > 9) { player2.score4 -= 10; }
+	player2.score += score_increase;
+	sprintf(text_buffer, "%04d00", player2.score);
+	draw_num(24, 27);
+	
 }
 
 
@@ -325,25 +335,12 @@ static void update_player_movement(){
 	if (player2.y > SCREEN_RES_Y - HALF_PLAYER_SIZE) { player2.y = SCREEN_RES_Y - HALF_PLAYER_SIZE; }
 }
 
-static void draw_score_labels(){
-	char buffer[7];
-	
-	// TODO run when updating scores
-	// sprintf(buffer, "%d%d%d%d00", player1.score4, player1.score3, player1.score2, player1.score1);
-	// px_buffer_blit(NT_ADDR(0, 2, 27), buffer, strlen(buffer));
-
-	// sprintf(buffer, "%d%d%d%d00", player2.score4, player2.score3, player2.score2, player2.score1);
-	// px_buffer_blit(NT_ADDR(0, 24, 27), buffer, strlen(buffer));
-}
-
 u8* minutes_timer;
 u8* seconds_timer;
 u8* frames_timer;
 
 // Returns true when game should continue, false when game is over
 static bool update_game_timer(){
-	char buffer[5];
-
 	if (frames_timer == 0){
 		
 		if (seconds_timer == 0)
@@ -359,15 +356,11 @@ static bool update_game_timer(){
 		seconds_timer--;
 		frames_timer = FPS;
 		
-		if (seconds_timer < 10) sprintf(buffer, "%d:0%d", minutes_timer, seconds_timer);
-		else 					sprintf(buffer, "%d:%d", minutes_timer, seconds_timer);
+		sprintf(text_buffer, "%d:%02d", minutes_timer, seconds_timer);
+		draw_num(14, 2);
 	}
 	frames_timer--;
-
-	// Draw the timer
 	
-	px_buffer_blit(NT_ADDR(0, 14, 2), buffer, strlen(buffer));
-
 	return true;
 }
 
@@ -390,18 +383,16 @@ static void game_run(void){
 	player1.x = 64;
 	player1.y = 120;
 	player1.player_direction = DIR_RIGHT;
-	player1.score1 = 0;
-	player1.score2 = 0;
-	player1.score3 = 0;
-	player1.score4 = 0;
+	player1.score = 0;
+	// triggers a redraw
+	add_score_player1(0);
 	
 	player2.x = SCREEN_RES_X - 64;
 	player2.y = 120;
 	player2.player_direction = DIR_LEFT;
-	player2.score1 = 0;
-	player2.score2 = 0;
-	player2.score3 = 0;
-	player2.score4 = 0;
+	player2.score = 0;
+	// triggers a redraw
+	add_score_player1(0);
 
 	// Length of a round, change if needed (Assumes that minutes are < 10 and seconds < 60)
 	minutes_timer = 2;
@@ -415,7 +406,6 @@ static void game_run(void){
 		read_gamepads();
 		update_player_movement();
 		if (!update_game_timer()) game_over_screen();
-		draw_score_labels();
 		
 		// Draw player sprites
 		meta_spr(player1.x, player1.y, 0, PLAYER_ANIMS[player1.player_direction][player1.anim_ticks/PLAYER_TICKS_PER_FRAME]);
@@ -433,24 +423,13 @@ static void game_run(void){
 
 // 0 is a tie, 1 is player 1, 2 is player 2
 static u8 get_winner(){
-	if (player1.score4 > player2.score4) return 1;
-	if (player1.score4 < player2.score4) return 2;
-	
-	if (player1.score3 > player2.score3) return 1;
-	if (player1.score3 < player2.score3) return 2;
-	
-	if (player1.score2 > player2.score2) return 1;
-	if (player1.score2 < player2.score2) return 2;
-	
-	if (player1.score1 > player2.score1) return 1;
-	if (player1.score1 < player2.score1) return 2;
+	if (player1.score > player2.score) return 1;
+	if (player1.score < player2.score) return 2;
 
 	return 0;
 }
 
 static void game_over_screen(){
-	char buffer[10];
-	u8 winner;
 
 	px_ppu_sync_disable();{
 		// Load the splash tilemap into nametable 0.
@@ -459,17 +438,11 @@ static void game_over_screen(){
 	} px_ppu_sync_enable();
 
 	px_spr_clear();
-
-	while (true)
+	
 	{
-		read_gamepads();
-		
-		if (JOY_START(pad1.value) || JOY_START(pad2.value)) {
-			game_run();
-		}
-
 		// Draw who winner is
-		winner = get_winner();
+		char buffer[10];
+		u8 winner = get_winner();
 		if (winner == 0)      sprintf(buffer, "Tie! Both Win!");
 		else if (winner == 1) sprintf(buffer, "Player 1 Wins!");
 		else if (winner == 2) sprintf(buffer, "Player 2 Wins!");
@@ -480,15 +453,25 @@ static void game_over_screen(){
 		sprintf(buffer, "Player 1:");
 		px_buffer_blit(NT_ADDR(0, 4, 14), buffer, strlen(buffer));
 		
-		sprintf(buffer, "%d%d%d%d00", player1.score4, player1.score3, player1.score2, player1.score1);
+		sprintf(buffer, "%04d00", player1.score);
 		px_buffer_blit(NT_ADDR(0, 4, 16), buffer, strlen(buffer));
 		
 		// Draw player 2 score
 		sprintf(buffer, "Player 2:");
 		px_buffer_blit(NT_ADDR(0, 19, 14), buffer, strlen(buffer));
 
-		sprintf(buffer, "%d%d%d%d00", player2.score4, player2.score3, player2.score2, player2.score1);
+		sprintf(buffer, "%04d00", player2.score);
 		px_buffer_blit(NT_ADDR(0, 22, 16), buffer, strlen(buffer));
+	}
+	
+	while (true)
+	{
+		read_gamepads();
+		
+		if (JOY_START(pad1.value) || JOY_START(pad2.value)) {
+			game_run();
+		}
+
 
 		// TODO Have some more stuff so not empty, maybe happy and sad raccoons for winner / loser
 		
