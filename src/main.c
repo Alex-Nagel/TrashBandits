@@ -662,9 +662,9 @@ void main(void){
 	for(idx = 0; idx < 32; idx++) px_buffer_set_color(idx, 0x1D);
 	px_wait_nmi();
 	
-	music_init(&MUSIC);
+	// music_init(&MUSIC);
 	sound_init(&SOUNDS);
-	music_play(0);
+	// music_play(0);
 	
 	rand_seed = 0x7A3B;
 	px_debug_hex_addr = NT_ADDR(0, 3, 3);
