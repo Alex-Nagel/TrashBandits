@@ -328,11 +328,12 @@ static void update_player_movement(){
 static void draw_score_labels(){
 	char buffer[7];
 	
-	sprintf(buffer, "%d%d%d%d00", player1.score4, player1.score3, player1.score2, player1.score1);
-	px_buffer_blit(NT_ADDR(0, 2, 27), buffer, strlen(buffer));
+	// TODO run when updating scores
+	// sprintf(buffer, "%d%d%d%d00", player1.score4, player1.score3, player1.score2, player1.score1);
+	// px_buffer_blit(NT_ADDR(0, 2, 27), buffer, strlen(buffer));
 
-	sprintf(buffer, "%d%d%d%d00", player2.score4, player2.score3, player2.score2, player2.score1);
-	px_buffer_blit(NT_ADDR(0, 24, 27), buffer, strlen(buffer));
+	// sprintf(buffer, "%d%d%d%d00", player2.score4, player2.score3, player2.score2, player2.score1);
+	// px_buffer_blit(NT_ADDR(0, 24, 27), buffer, strlen(buffer));
 }
 
 u8* minutes_timer;
@@ -357,12 +358,13 @@ static bool update_game_timer(){
 
 		seconds_timer--;
 		frames_timer = FPS;
+		
+		if (seconds_timer < 10) sprintf(buffer, "%d:0%d", minutes_timer, seconds_timer);
+		else 					sprintf(buffer, "%d:%d", minutes_timer, seconds_timer);
 	}
 	frames_timer--;
 
 	// Draw the timer
-	if (seconds_timer < 10) sprintf(buffer, "%d:0%d", minutes_timer, seconds_timer);
-	else 					sprintf(buffer, "%d:%d", minutes_timer, seconds_timer);
 	
 	px_buffer_blit(NT_ADDR(0, 14, 2), buffer, strlen(buffer));
 
@@ -407,6 +409,7 @@ static void game_run(void){
 	frames_timer = 60; // Keep this as 60
 	
 	while(true){
+		// px_profile_start();
 		update_arena();
 		
 		read_gamepads();
@@ -421,6 +424,7 @@ static void game_run(void){
 		draw_arena();
 		
 		px_spr_end();
+		// px_profile_end();
 		px_wait_nmi();
 	}
 	
