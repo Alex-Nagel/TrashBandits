@@ -16,6 +16,11 @@
 
 #define FPS 60
 
+#define DUMPSTER_TOP_BOUND 64
+#define DUMPSTER_BOTTOM_BOUND 160
+#define DUMPSTER_1_RIGHT_BOUND 64
+#define DUMPSTER_2_LEFT_BOUND 180
+
 Gamepad pad1, pad2;
 
 void read_gamepads(void){
@@ -168,6 +173,9 @@ struct Player {
 struct Player player1;
 struct Player player2;
 
+static void add_score_player1(u8 score_increase);
+static void add_score_player2(u8 score_increase);
+
 static void drop_trash(u8 idx){
 	ix = rand()%8;
 	ARENA.trash.x[idx] = 256*16*(ix + (16 - 8)/2);
@@ -213,7 +221,19 @@ static void update_arena(void){
 				ARENA.trash.x[idx] = (ARENA.trash.x[idx] + 8*256) & 0xF000;
 				ARENA.trash.y[idx] = (ARENA.trash.y[idx] + 8*256) & 0xF000;
 				
-				// TODO check landing area and award points
+				// check landing area and award points
+				if (ARENA.trash.y[idx] / 256 < DUMPSTER_BOTTOM_BOUND && ARENA.trash.y[idx] / 256 > DUMPSTER_TOP_BOUND){
+					// drop_trash(idx);
+					if (ARENA.trash.x[idx] / 256 < DUMPSTER_1_RIGHT_BOUND){
+						// TODO Check if matching goal
+						drop_trash(idx);
+						add_score_player1(10);
+					} else if (ARENA.trash.x[idx] / 256 > DUMPSTER_2_LEFT_BOUND){
+						// TODO Check if matching goal
+						drop_trash(idx);
+						add_score_player2(10);
+					}
+				}
 			}
 		}
 		
@@ -389,7 +409,7 @@ static void update_player_movement(){
 	if(JOY_RIGHT(pad1.value)) { player1.x += 1; player1.player_direction = DIR_RIGHT; }
 	if(JOY_DOWN (pad1.value)) { player1.y += 1; player1.player_direction = DIR_DOWN; }
 	if(JOY_UP   (pad1.value)) { player1.y -= 1; player1.player_direction = DIR_UP; }
-	if(JOY_BTN_A(pad1.value)) { add_score_player1(1); } // TODO Delete, right now just a test for score
+	// if(JOY_BTN_A(pad1.value)) { add_score_player1(1); } // TODO Delete, right now just a test for score
 	if(pad1.value & JOY_DPAD_MASK){
 		player1.anim_ticks++;
 		if(player1.anim_ticks/PLAYER_TICKS_PER_FRAME == 3) player1.anim_ticks = 0;
@@ -421,7 +441,7 @@ static void update_player_movement(){
 	if(JOY_RIGHT(pad2.value)) { player2.x += 1; player2.player_direction = DIR_RIGHT; }
 	if(JOY_DOWN (pad2.value)) { player2.y += 1; player2.player_direction = DIR_DOWN; }
 	if(JOY_UP   (pad2.value)) { player2.y -= 1; player2.player_direction = DIR_UP; }
-	if(JOY_BTN_A(pad2.value)) { add_score_player2(1); } // TODO Delete, right now just a test for score
+	// if(JOY_BTN_A(pad2.value)) { add_score_player2(1); } // TODO Delete, right now just a test for score
 	if(pad2.value & JOY_DPAD_MASK){
 		player2.anim_ticks++;
 		if(player2.anim_ticks/PLAYER_TICKS_PER_FRAME == 3) player2.anim_ticks = 0;
