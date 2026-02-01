@@ -983,6 +983,8 @@ static void game_over_screen(){
 		// clear the screen
 		px_addr(NT_ADDR(0, 0, 0));
 		px_fill(1024, 0);
+		px_addr(AT_ADDR(0));
+		px_fill(64, 0xFF);
 		PX.scroll_x = 0;
 	} px_ppu_sync_enable();
 
