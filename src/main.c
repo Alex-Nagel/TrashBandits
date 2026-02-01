@@ -139,7 +139,6 @@ static u8 TRASH_PAL[] = {2, 1, 3, 2};
 #define MAX_TRASH 10
 struct {
 	struct {
-		int count;
 		u8 type[MAX_TRASH];
 		u16 x[MAX_TRASH];
 		u16 y[MAX_TRASH];
@@ -152,9 +151,6 @@ struct {
 		// 0 if on ground, 1 if player 1 is picking it up, 2 for player 2
 		u8 player[MAX_TRASH];
 	} trash;
-	
-	// horizontal spans with trash in them
-	bool occupied[MAX_TRASH];
 } ARENA;
 
 struct Player {
@@ -172,21 +168,19 @@ struct Player {
 struct Player player1;
 struct Player player2;
 
-static void drop_trash(u8 x, u8 y, u8 type){
-	idx = ARENA.trash.count;
-	ARENA.trash.x[idx] = 256*16*(x + (16 - 8)/2);
-	ARENA.trash.y[idx] = 256*16*(y + (15 - MAX_TRASH)/2);
-	ARENA.trash.type[idx] = type;
+static void drop_trash(u8 idx){
+	ix = rand()%8;
+	ARENA.trash.x[idx] = 256*16*(ix + (16 - 8)/2);
+	ARENA.trash.y[idx] = 256*16*(idx + (15 - MAX_TRASH)/2);
+	ARENA.trash.type[idx] = rand()%4;
 	ARENA.trash.fall_anim[idx] = 1;
-	ARENA.trash.count++;
-	ARENA.occupied[y] = true;
 	ARENA.trash.player[idx] = 0;
 }
 
 static void init_arena(void){
 	u8 i;
 	for(i = 0; i < MAX_TRASH; i++){
-		drop_trash(rand()%8, i, i%4);
+		drop_trash(i);
 	}
 }
 
@@ -197,7 +191,7 @@ static void update_arena(void){
 	// TODO need timers for player goals
 	// TODO need timers for trash drops?
 	//   on a timer after player pickups?
-	for(idx = 0; idx < ARENA.trash.count; idx++){
+	for(idx = 0; idx < MAX_TRASH; idx++){
 		if(ARENA.trash.fall_anim[idx]){
 			ARENA.trash.fall_anim[idx]--;
 		}
@@ -344,7 +338,7 @@ static const u8** PLAYER_ANIMS[] = {
 };
 
 static void draw_arena(){
-	for(idx = 0; idx < ARENA.trash.count; idx++){
+	for(idx = 0; idx < MAX_TRASH; idx++){
 		if(ARENA.trash.fall_anim[idx]){
 			if(ARENA.trash.y[idx] > ARENA.trash.fall_anim[idx]){
 				meta_spr(ARENA.trash.x[idx]/256, ARENA.trash.y[idx]/256 - ARENA.trash.fall_anim[idx], 1, TRASH_BAG_ANIM[px_ticks/4 % 4]);
@@ -508,7 +502,7 @@ static void update_reticles(){
 	if(player2.hands_free) player2.selected = ~0;
 	
 	// Check for pickup
-	for(idx = 0; idx < ARENA.trash.count; idx++){
+	for(idx = 0; idx < MAX_TRASH; idx++){
 		trash_x = ARENA.trash.x[idx] / (16*256);
 		trash_y = ARENA.trash.y[idx] / (16*256);
 
