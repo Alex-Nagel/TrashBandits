@@ -241,6 +241,14 @@ static const u8 HAPPY_FACE_META[] = {
 	128,
 };
 
+static const u8 TROPHY_META[] = {
+	0, 0, 0x62, 0,
+	8, 0, 0x63, 0,
+	0, 8, 0x72, 0,
+	8, 8, 0x73, 0,
+	128,
+};
+
 static u8 TRASH_PAL[] = {2, 1, 3, 2};
 
 #define MAX_TRASH 8
@@ -987,13 +995,17 @@ static void game_over_screen(){
 		
 		// Show happy/sad faces for winner/loser
 		if       (winner == 0){ // Tie
+			meta_spr(56, 88, 1, TROPHY_META);
+			meta_spr(184, 88, 1, TROPHY_META);
 			meta_spr(56, 152, 0, HAPPY_FACE_META);
 			meta_spr(184, 152, 0, HAPPY_FACE_META);
 		}else if (winner == 1){ // 1 wins
+			meta_spr(56, 88, 1, TROPHY_META);
 			meta_spr(56, 152, 0, HAPPY_FACE_META);
 			meta_spr(184, 152, 0, SAD_FACE_META);
 		}else if (winner == 2){ // 2 wins
 			meta_spr(56, 152, 0, SAD_FACE_META);
+			meta_spr(184, 88, 1, TROPHY_META);
 			meta_spr(184, 152, 0, HAPPY_FACE_META);
 		}
 
