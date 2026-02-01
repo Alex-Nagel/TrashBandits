@@ -331,14 +331,14 @@ static void update_arena(void){
 			
 			// if ticks < num check for player collision
 			
-			if(ARENA.trash.throw_anim[idx] < THROW_TICKS/2){
+			if(ARENA.trash.throw_anim[idx] < THROW_TICKS/3){
 				if(abs(player1.x/256 - ARENA.trash.x[idx]/256) < 12 && abs(player1.x/256 - ARENA.trash.x[idx]/256) < 12){
 					player1.stun_ticks = 120;
 					drop_trash(idx);
 					
 					if(player1.selected != ~0){
 						ARENA.trash.player[player1.selected] = 0;
-						ARENA.trash.x[player1.selected] = (ARENA.trash.x[player1.selected] + 24*256) & 0xF000;
+						ARENA.trash.x[player1.selected] = (ARENA.trash.x[player1.selected] + 8*256) & 0xF000;
 						ARENA.trash.y[player1.selected] = (ARENA.trash.y[player1.selected] + 24*256) & 0xF000;
 					}
 					player1.hands_free = true;
@@ -350,7 +350,7 @@ static void update_arena(void){
 					
 					if(player2.selected != ~0){
 						ARENA.trash.player[player2.selected] = 0;
-						ARENA.trash.x[player2.selected] = (ARENA.trash.x[player2.selected] + 24*256) & 0xF000;
+						ARENA.trash.x[player2.selected] = (ARENA.trash.x[player2.selected] + 8*256) & 0xF000;
 						ARENA.trash.y[player2.selected] = (ARENA.trash.y[player2.selected] + 24*256) & 0xF000;
 					}
 					player2.hands_free = true;
@@ -508,6 +508,14 @@ static const u8 PLAYER_DOWN2_META[] = {
 	 0, -8, 0x6B, 0,
 	-8,  0, 0x7A, 0,
 	 0,  0, 0x7B, 0,
+	128,
+};
+
+static const u8 PLAYER_STUN_META[] = {
+	-8, -8, 0x4C, 0,
+	 0, -8, 0x4D, 0,
+	-8,  0, 0x5C, 0,
+	 0,  0, 0x5D, 0,
 	128,
 };
 
@@ -888,10 +896,12 @@ static void game_run(void){
 		
 		// Draw player sprites
 		if(player1.stun_ticks){
+			meta_spr(player1.x/256, player1.y/256, 0, PLAYER_STUN_META);
 		} else {
 			meta_spr(player1.x/256, player1.y/256, 0, PLAYER_ANIMS[player1.player_direction][player1.anim_ticks/PLAYER_TICKS_PER_FRAME]);
 		}
 		if(player2.stun_ticks){
+			meta_spr(player2.x/256, player2.y/256, 0, PLAYER_STUN_META);
 		} else {
 			meta_spr(player2.x/256, player2.y/256, 0, PLAYER_ANIMS[player2.player_direction][player2.anim_ticks/PLAYER_TICKS_PER_FRAME]);
 		}
