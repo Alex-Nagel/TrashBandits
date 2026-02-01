@@ -16,10 +16,15 @@
 
 #define FPS 60
 
+#define SECONDS_BETWEEN_GOAL_CHANGE 15
+
 #define DUMPSTER_TOP_BOUND 64
 #define DUMPSTER_BOTTOM_BOUND 160
 #define DUMPSTER_1_RIGHT_BOUND 64
 #define DUMPSTER_2_LEFT_BOUND 180
+
+#define GOAL_TRASH_SCORE 5
+#define NORMAL_TRASH_SCORE 2
 
 Gamepad pad1, pad2;
 
@@ -185,6 +190,8 @@ struct Player {
 
 	bool hands_free;
 	u8 selected;
+
+	u8 goal_trash_type;
 };
 
 struct Player player1;
@@ -212,6 +219,7 @@ static void init_arena(void){
 #define THROW_TICKS 10
 
 static void update_arena(void){
+	bool matching = false;
 	// TODO need initial trash
 	// TODO need timers for player goals
 	// TODO need timers for trash drops?
@@ -242,13 +250,19 @@ static void update_arena(void){
 				if (ARENA.trash.y[idx] / 256 < DUMPSTER_BOTTOM_BOUND && ARENA.trash.y[idx] / 256 > DUMPSTER_TOP_BOUND){
 					// drop_trash(idx);
 					if (ARENA.trash.x[idx] / 256 < DUMPSTER_1_RIGHT_BOUND){
-						// TODO Check if matching goal
+						matching = ARENA.trash.type[idx] == player1.goal_trash_type;
 						drop_trash(idx);
-						add_score_player1(10);
+
+						// Check for matching goal
+						if (matching) add_score_player1(GOAL_TRASH_SCORE);
+						else		  add_score_player1(NORMAL_TRASH_SCORE);
 					} else if (ARENA.trash.x[idx] / 256 > DUMPSTER_2_LEFT_BOUND){
-						// TODO Check if matching goal
+						bool matching = ARENA.trash.type[idx] == player2.goal_trash_type;
 						drop_trash(idx);
-						add_score_player2(10);
+
+						// Check for matching goal
+						if (matching) add_score_player2(GOAL_TRASH_SCORE);
+						else		  add_score_player2(NORMAL_TRASH_SCORE);
 					}
 				}
 			}
@@ -516,6 +530,13 @@ static void update_player_movement(){
 	}
 }
 
+static void update_trash_goals(){
+	// Changes each player's trash goal to a random trash type
+	// Currently can be the same as before and same as other person, may want to change that
+	player1.goal_trash_type = rand() % 4;
+	player2.goal_trash_type = rand() % 4;
+}
+
 static void update_reticles(){
 	u8 playerx;
 	u8 playery;
@@ -584,6 +605,8 @@ static void update_reticles(){
 	}
 }
 
+u8* change_goal_seconds_timer;
+
 u8* minutes_timer;
 u8* seconds_timer;
 u8* frames_timer;
@@ -603,10 +626,16 @@ static bool update_game_timer(){
 		}
 
 		seconds_timer--;
+		change_goal_seconds_timer--;
 		frames_timer = FPS;
 		
 		sprintf(text_buffer, "%d:%02d", minutes_timer, seconds_timer);
 		draw_num(14, 2);
+
+		if (change_goal_seconds_timer == 0) {
+			change_goal_seconds_timer = SECONDS_BETWEEN_GOAL_CHANGE;
+			update_trash_goals();
+		}
 	}
 	frames_timer--;
 	
@@ -657,6 +686,9 @@ static void game_run(void){
 	minutes_timer = 2;
 	seconds_timer = 30;
 	frames_timer = 60; // Keep this as 60
+	change_goal_seconds_timer = SECONDS_BETWEEN_GOAL_CHANGE;
+
+	update_trash_goals();
 	
 	while(true){
 		// px_profile_start();
@@ -669,6 +701,10 @@ static void game_run(void){
 		// Draw player sprites
 		meta_spr(player1.x, player1.y, 0, PLAYER_ANIMS[player1.player_direction][player1.anim_ticks/PLAYER_TICKS_PER_FRAME]);
 		meta_spr(player2.x, player2.y, 0, PLAYER_ANIMS[player2.player_direction][player2.anim_ticks/PLAYER_TICKS_PER_FRAME]);
+
+		// Draw goal trash sprites (may want to change position / flicker later, but if in corners don't have to worry about that as much)
+		meta_spr(16, 200, TRASH_PAL[player1.goal_trash_type], TRASH_METAS[player1.goal_trash_type]);
+		meta_spr(224, 200, TRASH_PAL[player2.goal_trash_type], TRASH_METAS[player2.goal_trash_type]);
 		
 		draw_arena();
 
