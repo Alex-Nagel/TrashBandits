@@ -137,12 +137,45 @@ static const u8 POOF3_META[] = {
 	128,
 };
 
+
 static const u8* POOF_ANIM[] = {
 	POOF1_META,
 	POOF2_META,
 	POOF3_META,
 	POOF2_META,
 	POOF1_META,
+};
+
+static const u8 SPARKLE1_META[] = {
+	0, 0, 0x80, 0,
+	8, 0, 0x81, 0,
+	0, 8, 0x90, 0,
+	8, 8, 0x91, 0,
+	128,
+};
+
+static const u8 SPARKLE2_META[] = {
+	0, 0, 0x82, 0,
+	8, 0, 0x83, 0,
+	0, 8, 0x92, 0,
+	8, 8, 0x93, 0,
+	128,
+};
+
+static const u8 SPARKLE3_META[] = {
+	0, 0, 0x84, 0,
+	8, 0, 0x85, 0,
+	0, 8, 0x94, 0,
+	8, 8, 0x95, 0,
+	128,
+};
+
+static const u8* SPARKLE_ANIM[] = {
+	SPARKLE1_META,
+	SPARKLE2_META,
+	SPARKLE3_META,
+	SPARKLE2_META,
+	SPARKLE1_META,
 };
 
 static const u8 TRASH_APPLE_META[] = {
@@ -243,6 +276,7 @@ struct Player {
 	u8 sparkle_anim_ticks;
 	u8 sparkle_x;
 	u8 sparkle_y;
+	bool perfect_sparkle;
 };
 
 struct Player player1;
@@ -308,19 +342,27 @@ static void update_arena(void){
 						player1.sparkle_anim_ticks = SPARKLE_TICKS_PER_FRAME * SPARKLE_TICK_FRAMES;
 						player1.sparkle_x = ARENA.trash.x[idx] / 256;
 						player1.sparkle_y = ARENA.trash.y[idx] / 256;
+						player1.perfect_sparkle = false;
 
 						drop_trash(idx);
 
 						// Check for matching goal
-						if (matching) add_score_player1(GOAL_TRASH_SCORE);
-						else		  add_score_player1(NORMAL_TRASH_SCORE);
+						if (matching) { add_score_player1(GOAL_TRASH_SCORE); player1.perfect_sparkle = true; }
+						else		    add_score_player1(NORMAL_TRASH_SCORE);
 					} else if (ARENA.trash.x[idx] / 256 > DUMPSTER_2_LEFT_BOUND){
 						bool matching = ARENA.trash.type[idx] == player2.goal_trash_type;
+	
+						// Create sparkle effect
+						player2.sparkle_anim_ticks = SPARKLE_TICKS_PER_FRAME * SPARKLE_TICK_FRAMES;
+						player2.sparkle_x = ARENA.trash.x[idx] / 256;
+						player2.sparkle_y = ARENA.trash.y[idx] / 256;
+						player2.perfect_sparkle = false;
+
 						drop_trash(idx);
 
 						// Check for matching goal
-						if (matching) add_score_player2(GOAL_TRASH_SCORE);
-						else		  add_score_player2(NORMAL_TRASH_SCORE);
+						if (matching) { add_score_player2(GOAL_TRASH_SCORE); player2.perfect_sparkle = true; }
+						else		    add_score_player2(NORMAL_TRASH_SCORE);
 					}
 				}
 				
@@ -473,8 +515,19 @@ static void draw_arena(){
 
 static void draw_sparkles(){
 	if (player1.sparkle_anim_ticks > 0){
-		meta_spr(player1.sparkle_x, player1.sparkle_y, 1, POOF_ANIM[player1.sparkle_anim_ticks / SPARKLE_TICKS_PER_FRAME % SPARKLE_TICKS_PER_FRAME]);
+		if (player1.perfect_sparkle)
+			meta_spr(player1.sparkle_x, player1.sparkle_y, 1, SPARKLE_ANIM[player1.sparkle_anim_ticks / SPARKLE_TICKS_PER_FRAME % SPARKLE_TICKS_PER_FRAME]);
+		else
+			meta_spr(player1.sparkle_x, player1.sparkle_y, 1, POOF_ANIM[player1.sparkle_anim_ticks / SPARKLE_TICKS_PER_FRAME % SPARKLE_TICKS_PER_FRAME]);
 		player1.sparkle_anim_ticks--;
+	}
+	
+	if (player2.sparkle_anim_ticks > 0){
+		if (player2.perfect_sparkle)
+			meta_spr(player2.sparkle_x, player2.sparkle_y, 1, SPARKLE_ANIM[player2.sparkle_anim_ticks / SPARKLE_TICKS_PER_FRAME % SPARKLE_TICKS_PER_FRAME]);
+		else
+			meta_spr(player2.sparkle_x, player2.sparkle_y, 1, POOF_ANIM[player2.sparkle_anim_ticks / SPARKLE_TICKS_PER_FRAME % SPARKLE_TICKS_PER_FRAME]);
+		player2.sparkle_anim_ticks--;
 	}
 }
 
