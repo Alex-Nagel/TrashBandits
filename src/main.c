@@ -628,6 +628,8 @@ static void update_reticles(){
 	u8 grid1_y;
 	u8 grid2_x;
 	u8 grid2_y;
+	bool reticle_1_active = false;
+	bool reticle_2_active = false;
 
 	// Draw player1 reticle
 	playerx = player1.x;
@@ -676,12 +678,18 @@ static void update_reticles(){
 		trash_y = ARENA.trash.y[idx] / (16*256);
 
 		if (trash_x == grid1_x && trash_y == grid1_y && ARENA.trash.player[idx] == 0 && player1.hands_free){
-			if(px_ticks % 2 == 0) meta_spr(trash1_global_x, trash1_global_y, 0, RETICLE_META);
+			if(px_ticks % 2 == 0 && !reticle_1_active) {
+				meta_spr(trash1_global_x, trash1_global_y, 0, RETICLE_META);
+				reticle_1_active = true;
+			}
 			player1.selected = idx;
 		}
 
 		if (trash_x == grid2_x && trash_y == grid2_y && ARENA.trash.player[idx] == 0 && player2.hands_free){
-			if(px_ticks % 2 == 1) meta_spr(trash2_global_x, trash2_global_y, 0, RETICLE_META);
+			if(px_ticks % 2 == 1 && !reticle_2_active) {
+				meta_spr(trash2_global_x, trash2_global_y, 0, RETICLE_META);
+				reticle_2_active = true;
+			}
 			player2.selected = idx;
 		}
 	}
