@@ -33,6 +33,8 @@
 #define GOAL_TRASH_SCORE 5
 #define NORMAL_TRASH_SCORE 2
 
+#define RETICLE_OFFSET 12
+
 Gamepad pad1, pad2;
 
 void read_gamepads(void){
@@ -679,7 +681,7 @@ static void add_score_player1(u8 score_increase){
 static void add_score_player2(u8 score_increase){
 	player2.score += score_increase;
 	sprintf(text_buffer, "%04d00", player2.score);
-	draw_num(24, 26);
+	draw_num(23, 26);
 	
 }
 
@@ -830,10 +832,10 @@ static void update_reticles(){
 	playerx = player1.x/256;
 	playery = player1.y/256;
 
-	if (player1.player_direction == DIR_LEFT) playerx -= 16;
-	if (player1.player_direction == DIR_RIGHT) playerx += 16;
-	if (player1.player_direction == DIR_DOWN) playery += 16;
-	if (player1.player_direction == DIR_UP) playery -= 16;
+	if (player1.player_direction == DIR_LEFT)  playerx -= RETICLE_OFFSET;
+	if (player1.player_direction == DIR_RIGHT) playerx += RETICLE_OFFSET;
+	if (player1.player_direction == DIR_DOWN)  playery += RETICLE_OFFSET;
+	if (player1.player_direction == DIR_UP)    playery -= RETICLE_OFFSET;
 
 	grid1_x = playerx / 16;
 	grid1_y = playery / 16;
@@ -847,10 +849,10 @@ static void update_reticles(){
 	playerx = player2.x/256;
 	playery = player2.y/256;
 
-	if (player2.player_direction == DIR_LEFT) playerx -= 16;
-	if (player2.player_direction == DIR_RIGHT) playerx += 16;
-	if (player2.player_direction == DIR_DOWN) playery += 16;
-	if (player2.player_direction == DIR_UP) playery -= 16;
+	if (player2.player_direction == DIR_LEFT)  playerx -= RETICLE_OFFSET;
+	if (player2.player_direction == DIR_RIGHT) playerx += RETICLE_OFFSET;
+	if (player2.player_direction == DIR_DOWN)  playery += RETICLE_OFFSET;
+	if (player2.player_direction == DIR_UP)    playery -= RETICLE_OFFSET;
 
 	grid2_x = playerx / 16;
 	grid2_y = playery / 16;
@@ -1008,12 +1010,12 @@ static void game_run(void){
 
 		draw_sparkles();
 		
-		// Draw goal trash sprites (may want to change position / flicker later, but if in corners don't have to worry about that as much)
-		meta_spr(16, 188, TRASH_PAL[player1.goal_trash_type], TRASH_METAS[player1.goal_trash_type]);
-		meta_spr(224, 188, TRASH_PAL[player2.goal_trash_type], TRASH_METAS[player2.goal_trash_type]);
-		
 		update_reticles();
 		draw_arena();
+		
+		// Draw goal trash sprites
+		meta_spr(24, 188, TRASH_PAL[player1.goal_trash_type], TRASH_METAS[player1.goal_trash_type]);
+		meta_spr(216, 188, TRASH_PAL[player2.goal_trash_type], TRASH_METAS[player2.goal_trash_type]);
 
 		
 		px_spr_end();
