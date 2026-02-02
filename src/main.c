@@ -653,7 +653,7 @@ static void add_score_player1(u8 score_increase){
 static void add_score_player2(u8 score_increase){
 	player2.score += score_increase;
 	sprintf(text_buffer, "%04d00", player2.score);
-	draw_num(24, 26);
+	draw_num(23, 26);
 	
 }
 
@@ -969,12 +969,12 @@ static void game_run(void){
 
 		draw_sparkles();
 		
-		// Draw goal trash sprites (may want to change position / flicker later, but if in corners don't have to worry about that as much)
-		meta_spr(16, 188, TRASH_PAL[player1.goal_trash_type], TRASH_METAS[player1.goal_trash_type]);
-		meta_spr(224, 188, TRASH_PAL[player2.goal_trash_type], TRASH_METAS[player2.goal_trash_type]);
-		
 		update_reticles();
 		draw_arena();
+		
+		// Draw goal trash sprites
+		meta_spr(24, 188, TRASH_PAL[player1.goal_trash_type], TRASH_METAS[player1.goal_trash_type]);
+		meta_spr(216, 188, TRASH_PAL[player2.goal_trash_type], TRASH_METAS[player2.goal_trash_type]);
 
 		
 		px_spr_end();
