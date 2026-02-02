@@ -18,6 +18,10 @@
 
 #define SECONDS_BETWEEN_GOAL_CHANGE 15
 
+#define STUN_DIST 12
+#define STUN_TICKS 120
+#define INVULNERABLE_TICKS 240
+
 #define SPARKLE_TICKS_PER_FRAME 4
 #define SPARKLE_TICK_FRAMES 5
 
@@ -291,6 +295,7 @@ struct {
 		
 		// counts down to 0 during the fall animation
 		u8 fall_anim[MAX_TRASH];
+		// counts down to 0 during the throw animation
 		u8 throw_anim[MAX_TRASH];
 		// Direction that the trash is currently being thrown, if being thrown
 		u8 throw_dir[MAX_TRASH];
@@ -307,6 +312,7 @@ struct Player {
 	int score;
 	u8 anim_ticks;
 	u8 stun_ticks;
+	u8 invulnerable_ticks;
 
 	bool hands_free;
 	u8 selected;
@@ -370,9 +376,13 @@ static void update_arena(void){
 			
 			// if ticks < num check for player collision
 			
-			if(ARENA.trash.throw_anim[idx] < THROW_TICKS/3){
-				if(abs(player1.x/256 - ARENA.trash.x[idx]/256) < 12 && abs(player1.x/256 - ARENA.trash.x[idx]/256) < 12){
-					player1.stun_ticks = 120;
+			if(ARENA.trash.throw_anim[idx]){
+				if(
+					player1.invulnerable_ticks == 0 && ARENA.trash.player[idx] == 2 &&
+					abs(player1.x/256 - ARENA.trash.x[idx]/256) < STUN_DIST && abs(player1.y/256 - ARENA.trash.y[idx]/256) < STUN_DIST
+				){
+					player1.stun_ticks = STUN_TICKS;
+					player1.invulnerable_ticks = INVULNERABLE_TICKS;
 					drop_trash(idx);
 					
 					if(player1.selected != ~0){
@@ -383,8 +393,12 @@ static void update_arena(void){
 					player1.hands_free = true;
 					player1.selected = ~0;
 				}
-				if(abs(player2.x/256 - ARENA.trash.x[idx]/256) < 12 && abs(player2.x/256 - ARENA.trash.x[idx]/256) < 12){
-					player2.stun_ticks = 120;
+				if(
+					player2.invulnerable_ticks == 0 && ARENA.trash.player[idx] == 1 &&
+					abs(player2.x/256 - ARENA.trash.x[idx]/256) < STUN_DIST && abs(player2.y/256 - ARENA.trash.y[idx]/256) < STUN_DIST
+				){
+					player2.stun_ticks = STUN_TICKS;
+					player2.invulnerable_ticks = INVULNERABLE_TICKS;
 					drop_trash(idx);
 					
 					if(player2.selected != ~0){
@@ -398,6 +412,8 @@ static void update_arena(void){
 			}
 			
 			if(ARENA.trash.throw_anim[idx] == 0){
+				ARENA.trash.player[idx] = 0;
+				
 				// snap to nearest grid
 				ARENA.trash.x[idx] = (ARENA.trash.x[idx] + 8*256) & 0xF000;
 				ARENA.trash.y[idx] = (ARENA.trash.y[idx] + 8*256) & 0xF000;
@@ -442,14 +458,16 @@ static void update_arena(void){
 			}
 		}
 		
-		if(ARENA.trash.player[idx] == 1){
-			ARENA.trash.x[idx] = player1.x -  8*256;
-			ARENA.trash.y[idx] = player1.y - 24*256;
-		}
-		
-		if(ARENA.trash.player[idx] == 2){
-			ARENA.trash.x[idx] = player2.x -  8*256;
-			ARENA.trash.y[idx] = player2.y - 24*256;
+		if(ARENA.trash.throw_anim[idx] == 0){
+			if(ARENA.trash.player[idx] == 1){
+				ARENA.trash.x[idx] = player1.x -  8*256;
+				ARENA.trash.y[idx] = player1.y - 24*256;
+			}
+			
+			if(ARENA.trash.player[idx] == 2){
+				ARENA.trash.x[idx] = player2.x -  8*256;
+				ARENA.trash.y[idx] = player2.y - 24*256;
+			}
 		}
 	}
 }
@@ -650,7 +668,8 @@ static void update_player_movement(){
 	u16 original_2x = player2.x;
 	u16 original_2y = player2.y;
 	u16 speed2 = player2.hands_free ? 1*256 : 3*256/4;
-
+	
+	if(player1.invulnerable_ticks) player1.invulnerable_ticks--;
 	if(player1.stun_ticks){
 		player1.stun_ticks--;
 	} else {
@@ -693,12 +712,12 @@ static void update_player_movement(){
 		if(JOY_BTN_A(pad1.release)){
 			ARENA.trash.throw_anim[player1.selected] = THROW_TICKS;
 			ARENA.trash.throw_dir[player1.selected] = player1.player_direction;
-			ARENA.trash.player[player1.selected] = 0;
 			player1.hands_free = true;
 			player1.selected = ~0;
 		}
 	}
 	
+	if(player2.invulnerable_ticks) player2.invulnerable_ticks--;
 	if(player2.stun_ticks){
 		player2.stun_ticks--;
 	} else {
@@ -741,7 +760,6 @@ static void update_player_movement(){
 		if(JOY_BTN_A(pad2.release)){
 			ARENA.trash.throw_anim[player2.selected] = THROW_TICKS;
 			ARENA.trash.throw_dir[player2.selected] = player2.player_direction;
-			ARENA.trash.player[player2.selected] = 0;
 			player2.hands_free = true;
 			player2.selected = ~0;
 		}
@@ -934,15 +952,19 @@ static void game_run(void){
 		if (!update_game_timer()) break;
 		
 		// Draw player sprites
-		if(player1.stun_ticks){
-			meta_spr(player1.x/256, player1.y/256, 0, PLAYER_STUN_META);
-		} else {
-			meta_spr(player1.x/256, player1.y/256, 0, PLAYER_ANIMS[player1.player_direction][player1.anim_ticks/PLAYER_TICKS_PER_FRAME]);
+		if(player1.invulnerable_ticks == 0 || px_ticks % 2 == 0){
+			if(player1.stun_ticks){
+				meta_spr(player1.x/256, player1.y/256, 0, PLAYER_STUN_META);
+			} else {
+					meta_spr(player1.x/256, player1.y/256, 0, PLAYER_ANIMS[player1.player_direction][player1.anim_ticks/PLAYER_TICKS_PER_FRAME]);
+			}
 		}
-		if(player2.stun_ticks){
-			meta_spr(player2.x/256, player2.y/256, 0, PLAYER_STUN_META);
-		} else {
-			meta_spr(player2.x/256, player2.y/256, 0, PLAYER_ANIMS[player2.player_direction][player2.anim_ticks/PLAYER_TICKS_PER_FRAME]);
+		if(player2.invulnerable_ticks == 0 || px_ticks % 2 == 0){
+			if(player2.stun_ticks){
+				meta_spr(player2.x/256, player2.y/256, 0, PLAYER_STUN_META);
+			} else {
+				meta_spr(player2.x/256, player2.y/256, 0, PLAYER_ANIMS[player2.player_direction][player2.anim_ticks/PLAYER_TICKS_PER_FRAME]);
+			}
 		}
 
 		draw_sparkles();
