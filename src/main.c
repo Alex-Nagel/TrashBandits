@@ -33,6 +33,8 @@
 #define GOAL_TRASH_SCORE 5
 #define NORMAL_TRASH_SCORE 2
 
+#define RETICLE_OFFSET 12
+
 Gamepad pad1, pad2;
 
 void read_gamepads(void){
@@ -823,10 +825,10 @@ static void update_reticles(){
 	playerx = player1.x/256;
 	playery = player1.y/256;
 
-	if (player1.player_direction == DIR_LEFT) playerx -= 16;
-	if (player1.player_direction == DIR_RIGHT) playerx += 16;
-	if (player1.player_direction == DIR_DOWN) playery += 16;
-	if (player1.player_direction == DIR_UP) playery -= 16;
+	if (player1.player_direction == DIR_LEFT)  playerx -= RETICLE_OFFSET;
+	if (player1.player_direction == DIR_RIGHT) playerx += RETICLE_OFFSET;
+	if (player1.player_direction == DIR_DOWN)  playery += RETICLE_OFFSET;
+	if (player1.player_direction == DIR_UP)    playery -= RETICLE_OFFSET;
 
 	grid1_x = playerx / 16;
 	grid1_y = playery / 16;
@@ -840,10 +842,10 @@ static void update_reticles(){
 	playerx = player2.x/256;
 	playery = player2.y/256;
 
-	if (player2.player_direction == DIR_LEFT) playerx -= 16;
-	if (player2.player_direction == DIR_RIGHT) playerx += 16;
-	if (player2.player_direction == DIR_DOWN) playery += 16;
-	if (player2.player_direction == DIR_UP) playery -= 16;
+	if (player2.player_direction == DIR_LEFT)  playerx -= RETICLE_OFFSET;
+	if (player2.player_direction == DIR_RIGHT) playerx += RETICLE_OFFSET;
+	if (player2.player_direction == DIR_DOWN)  playery += RETICLE_OFFSET;
+	if (player2.player_direction == DIR_UP)    playery -= RETICLE_OFFSET;
 
 	grid2_x = playerx / 16;
 	grid2_y = playery / 16;
