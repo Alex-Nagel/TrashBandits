@@ -1187,7 +1187,7 @@ void main(void){
 	px_debug_hex_addr = NT_ADDR(0, 3, 3);
 	
 	// Jump to the splash screen state.
-	// igda_screen();
-	game_run();
+	igda_screen();
+	// game_run();
 	
 }
