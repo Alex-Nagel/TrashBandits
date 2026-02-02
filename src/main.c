@@ -671,6 +671,10 @@ static void update_player_movement(){
 		if(JOY_RIGHT(pad1.value)) { player1.x += speed1; player1.player_direction = DIR_RIGHT; }
 		if(JOY_DOWN (pad1.value)) { player1.y += speed1; player1.player_direction = DIR_DOWN; }
 		if(JOY_UP   (pad1.value)) { player1.y -= speed1; player1.player_direction = DIR_UP; }
+		
+		if(pad1.value & (JOY_LEFT_MASK | JOY_RIGHT_MASK)) player1.y -= (int)((((player1.y - 0x0800) & 0x0FFF) ^ 0x0800) - 0x0800) >> 5;
+		if(pad1.value & (JOY_UP_MASK   | JOY_DOWN_MASK )) player1.x -= (int)((((player1.x - 0x0800) & 0x0FFF) ^ 0x0800) - 0x0800) >> 5;
+
 		// if(JOY_BTN_A(pad1.value)) { add_score_player1(1); } // TODO Delete, right now just a test for score
 		if(pad1.value & JOY_DPAD_MASK){
 			player1.anim_ticks++;
@@ -720,7 +724,10 @@ static void update_player_movement(){
 		if(JOY_RIGHT(pad2.value)) { player2.x += speed2; player2.player_direction = DIR_RIGHT; }
 		if(JOY_DOWN (pad2.value)) { player2.y += speed2; player2.player_direction = DIR_DOWN; }
 		if(JOY_UP   (pad2.value)) { player2.y -= speed2; player2.player_direction = DIR_UP; }
-		// if(JOY_BTN_A(pad2.value)) { add_score_player2(1); } // TODO Delete, right now just a test for score
+		
+		if(pad2.value & (JOY_LEFT_MASK | JOY_RIGHT_MASK)) player2.y -= (int)((((player2.y - 0x0800) & 0x0FFF) ^ 0x0800) - 0x0800) >> 5;
+		if(pad2.value & (JOY_UP_MASK   | JOY_DOWN_MASK )) player2.x -= (int)((((player2.x - 0x0800) & 0x0FFF) ^ 0x0800) - 0x0800) >> 5;
+		
 		if(pad2.value & JOY_DPAD_MASK){
 			player2.anim_ticks++;
 			if(player2.anim_ticks/PLAYER_TICKS_PER_FRAME == 3) player2.anim_ticks = 0;
@@ -1147,7 +1154,7 @@ void main(void){
 	px_debug_hex_addr = NT_ADDR(0, 3, 3);
 	
 	// Jump to the splash screen state.
-	igda_screen();
-	// game_run();
+	// igda_screen();
+	game_run();
 	
 }
