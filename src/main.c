@@ -182,6 +182,33 @@ static const u8* SPARKLE_ANIM[] = {
 	SPARKLE1_META,
 };
 
+static const u8 SPLASH_BANANA_META[] = {
+	 0,  0, 0xA0, 0,
+	 0,  8, 0xB0, 0,
+	 0, 16, 0xC0, 0,
+	 0, 24, 0xD0, 0,
+	 0, 32, 0xE0, 0,
+	 8,  0, 0xA1, 0,
+	 8,  8, 0xB1, 0,
+	 8, 16, 0xC1, 0,
+	 8, 24, 0xD1, 0,
+	 8, 32, 0xE1, 0,
+	16,  0, 0xA2, 0,
+	16,  8, 0xB2, 0,
+	16, 16, 0xC2, 0,
+	16, 24, 0xD2, 0,
+	16, 32, 0xE2, 0,
+	16, 40, 0xF2, 0,
+	24,  0, 0xA3, 0,
+	24,  8, 0xB3, 0,
+	24, 16, 0xC3, 0,
+	24, 24, 0xD3, 0,
+	24, 32, 0xE3, 0,
+	24, 40, 0xF3, 0,
+	32, 32, 0xE4, 0,
+	128,
+};
+
 static const u8 TRASH_APPLE_META[] = {
 	0, 0, 0x00, 0,
 	8, 0, 0x01, 0,
@@ -1023,9 +1050,10 @@ static void title_screen(){
 	px_ppu_sync_disable();{
 		// Decompress the tileset into character memory.
 		px_lz4_to_vram(CHR_ADDR(0, 0), CHR_TITLE);
+		px_lz4_to_vram(CHR_ADDR(1, 0), CHR_SPRITES);
 		// Set which tiles to use for the background and sprites.
 		px_bg_table(0);
-		px_spr_table(0);
+		px_spr_table(1);
 		
 		px_lz4_to_vram(NT_ADDR(0, 0, 0), MAP_TITLE);
 		PX.scroll_x = 0;
@@ -1037,9 +1065,14 @@ static void title_screen(){
 	
 	while (true){
 		read_gamepads();
-		if (JOY_START(pad1.value) || JOY_START(pad2.value)) break;
+		if (JOY_START(pad1.value) || JOY_START(pad2.value)){
+			px_spr_clear();
+			break;
+		} 
 		// scramble the seed
 		rand_seed++;
+
+		meta_spr(95,108,1,SPLASH_BANANA_META);
 		
 		px_spr_end();
 		px_wait_nmi();
