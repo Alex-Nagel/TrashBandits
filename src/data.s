@@ -26,7 +26,11 @@ _PAL_IGDA:
 .export _PAL_TITLE
 _PAL_TITLE:
 	.incbin "chr/title.pal"
-	.incbin "chr/title.pal"
+	
+	.byte $10, $3D, $20, $1D
+	.byte $10, $08, $28, $1D
+	.byte $10, $09, $39, $1D
+	.byte $10, $2C, $1D, $16
 
 .export _PAL_DUMP
 _PAL_DUMP:
