@@ -18,6 +18,8 @@
 
 #define SECONDS_BETWEEN_GOAL_CHANGE 15
 
+#define NO_SELECTION 0xFF
+
 #define STUN_DIST 16
 #define STUN_TICKS 120
 #define INVULNERABLE_TICKS 240
@@ -388,13 +390,13 @@ static void update_arena(void){
 					player1.invulnerable_ticks = INVULNERABLE_TICKS;
 					drop_trash(idx);
 					
-					if(player1.selected != ~0){
+					if(player1.selected != NO_SELECTION){
 						ARENA.trash.player[player1.selected] = 0;
 						ARENA.trash.x[player1.selected] = (ARENA.trash.x[player1.selected] + 8*256) & 0xF000;
 						ARENA.trash.y[player1.selected] = (ARENA.trash.y[player1.selected] + 24*256) & 0xF000;
 					}
 					player1.hands_free = true;
-					player1.selected = ~0;
+					player1.selected = NO_SELECTION;
 				}
 				if(
 					player2.invulnerable_ticks == 0 && ARENA.trash.player[idx] == 1 &&
@@ -405,13 +407,13 @@ static void update_arena(void){
 					player2.invulnerable_ticks = INVULNERABLE_TICKS;
 					drop_trash(idx);
 					
-					if(player2.selected != ~0){
+					if(player2.selected != NO_SELECTION){
 						ARENA.trash.player[player2.selected] = 0;
 						ARENA.trash.x[player2.selected] = (ARENA.trash.x[player2.selected] + 8*256) & 0xF000;
 						ARENA.trash.y[player2.selected] = (ARENA.trash.y[player2.selected] + 24*256) & 0xF000;
 					}
 					player2.hands_free = true;
-					player2.selected = ~0;
+					player2.selected = NO_SELECTION;
 				}
 			}
 			
@@ -455,8 +457,13 @@ static void update_arena(void){
 						drop_trash(idx);
 
 						// Check for matching goal
-						if (matching) { add_score_player2(GOAL_TRASH_SCORE); player2.perfect_sparkle = true; }
-						else		    add_score_player2(NORMAL_TRASH_SCORE);
+						if (matching) {
+							sound_play(1);
+							add_score_player2(GOAL_TRASH_SCORE); player2.perfect_sparkle = true;
+						} else {
+							sound_play(3);
+							add_score_player2(NORMAL_TRASH_SCORE);
+						}
 					}
 				}
 				
@@ -736,18 +743,18 @@ static void update_player_movement(){
 			}
 		}
 		
-		if (JOY_BTN_A(pad1.press) && player1.selected != ~0){
+		if (JOY_BTN_A(pad1.press) && player1.selected != NO_SELECTION){
 			ARENA.trash.player[player1.selected] = 1;
 			player1.hands_free = false;
 		}
 		
-		if(JOY_BTN_A(pad1.release) && player1.hands_free == false){
-			// sound_play(0);
+		if(JOY_BTN_A(pad1.release) && player1.selected != NO_SELECTION){
+			sound_play(0);
 			ARENA.trash.throw_anim[player1.selected] = THROW_TICKS;
 			ARENA.trash.y[player1.selected] += 256*16;
 			ARENA.trash.throw_dir[player1.selected] = player1.player_direction;
 			player1.hands_free = true;
-			player1.selected = ~0;
+			player1.selected = NO_SELECTION;
 		}
 	}
 	
@@ -789,18 +796,18 @@ static void update_player_movement(){
 			}
 		}
 		
-		if (JOY_BTN_A(pad2.press) && player2.selected != ~0){
+		if (JOY_BTN_A(pad2.press) && player2.selected != NO_SELECTION){
 			ARENA.trash.player[player2.selected] = 2;
 			player2.hands_free = false;
 		}
 		
-		if(JOY_BTN_A(pad2.release) && player2.hands_free == false){
-			// sound_play(0);
+		if(JOY_BTN_A(pad2.release) && player2.selected != NO_SELECTION){
+			sound_play(0);
 			ARENA.trash.throw_anim[player2.selected] = THROW_TICKS;
 			ARENA.trash.y[player2.selected] += 256*16;
 			ARENA.trash.throw_dir[player2.selected] = player2.player_direction;
 			player2.hands_free = true;
-			player2.selected = ~0;
+			player2.selected = NO_SELECTION;
 		}
 	}
 }
@@ -862,8 +869,8 @@ static void update_reticles(){
 
 	// meta_spr(x, y, 0, RETICLE_META);
 
-	if(player1.hands_free) player1.selected = ~0;
-	if(player2.hands_free) player2.selected = ~0;
+	if(player1.hands_free) player1.selected = NO_SELECTION;
+	if(player2.hands_free) player2.selected = NO_SELECTION;
 	
 	// Check for pickup
 	for(idx = 0; idx < MAX_TRASH; idx++){
@@ -958,7 +965,7 @@ static void game_run(void){
 	player1.hands_free = true;
 	player1.player_direction = DIR_RIGHT;
 	player1.score = 0;
-	player1.selected = ~0;
+	player1.selected = NO_SELECTION;
 	player1.sparkle_anim_ticks = 0;
 	// triggers a redraw
 	add_score_player1(0);
@@ -969,7 +976,7 @@ static void game_run(void){
 	player2.hands_free = true;
 	player2.player_direction = DIR_LEFT;
 	player2.score = 0;
-	player2.selected = ~0;
+	player2.selected = NO_SELECTION;
 	player2.sparkle_anim_ticks = 0;
 	// triggers a redraw
 	add_score_player2(0);
@@ -1191,12 +1198,16 @@ void main(void){
 	music_init(&MUSIC);
 	sound_init(&SOUNDS);
 	// music_play(0);
+	// sound_play(0); // jump noise
+	// sound_play(1); // dinka dink
+	// sound_play(2); // scratch hi
+	// sound_play(3); // scratch low
 	
 	rand_seed = 0x7A3B;
 	px_debug_hex_addr = NT_ADDR(0, 3, 3);
 	
 	// Jump to the splash screen state.
-	igda_screen();
-	// game_run();
+	// igda_screen();
+	game_run();
 	
 }
