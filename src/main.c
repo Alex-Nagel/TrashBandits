@@ -249,7 +249,7 @@ static const u8 TRASH_FISH_META[] = {
 	128,
 };
 
-static u8* TRASH_METAS[] = {
+static const u8* TRASH_METAS[] = {
 	TRASH_APPLE_META,
 	TRASH_BANANA_META,
 	TRASH_TIRE_META,
@@ -288,7 +288,7 @@ static const u8 TROPHY_META[] = {
 	128,
 };
 
-static u8 TRASH_PAL[] = {2, 1, 3, 2};
+static const u8 TRASH_PAL[] = {2, 1, 3, 2};
 
 #define MAX_TRASH 8
 struct {
@@ -664,7 +664,7 @@ static void draw_sparkles(){
 // Unfortunately didn't get to retain the ascii tiles
 // Need to translate the digits and ':' into tiles
 char text_buffer[16];
-static draw_num(u8 x, u8 y){
+static void draw_num(u8 x, u8 y){
 	iy = strlen(text_buffer);
 	for(idx = 0; idx < iy; idx++){
 		if(text_buffer[idx] == ':'){
@@ -728,8 +728,8 @@ static void update_player_movement(){
 		if (player1.x/256 < HALF_PLAYER_SIZE) { player1.x = 256*HALF_PLAYER_SIZE; }
 		if (player1.y/256 < HALF_PLAYER_SIZE) { player1.y = 256*HALF_PLAYER_SIZE; }
 		
-		if (player1.x/256 > SCREEN_RES_X - HALF_PLAYER_SIZE) { player1.x = 256*(SCREEN_RES_X - HALF_PLAYER_SIZE); }
-		if (player1.y/256 > SCREEN_RES_Y - HALF_PLAYER_SIZE) { player1.y = 256*(SCREEN_RES_Y - HALF_PLAYER_SIZE); }
+		if (player1.x/256 > SCREEN_RES_X - HALF_PLAYER_SIZE) { player1.x = 256u*(SCREEN_RES_X - HALF_PLAYER_SIZE); }
+		if (player1.y/256 > SCREEN_RES_Y - HALF_PLAYER_SIZE) { player1.y = 256u*(SCREEN_RES_Y - HALF_PLAYER_SIZE); }
 
 		
 		// check for dumpster collision
@@ -781,8 +781,8 @@ static void update_player_movement(){
 		if (player2.x/256 < HALF_PLAYER_SIZE) { player2.x = 256*HALF_PLAYER_SIZE; }
 		if (player2.y/256 < HALF_PLAYER_SIZE) { player2.y = 256*HALF_PLAYER_SIZE; }
 
-		if (player2.x/256 > SCREEN_RES_X - HALF_PLAYER_SIZE) { player2.x = 256*(SCREEN_RES_X - HALF_PLAYER_SIZE); }
-		if (player2.y/256 > SCREEN_RES_Y - HALF_PLAYER_SIZE) { player2.y = 256*(SCREEN_RES_Y - HALF_PLAYER_SIZE); }
+		if (player2.x/256 > SCREEN_RES_X - HALF_PLAYER_SIZE) { player2.x = 256u*(SCREEN_RES_X - HALF_PLAYER_SIZE); }
+		if (player2.y/256 > SCREEN_RES_Y - HALF_PLAYER_SIZE) { player2.y = 256u*(SCREEN_RES_Y - HALF_PLAYER_SIZE); }
 
 		
 		// check for dumpster collision
@@ -899,11 +899,11 @@ static void update_reticles(){
 	}
 }
 
-u8* change_goal_seconds_timer;
+u8 change_goal_seconds_timer;
 
-u8* minutes_timer;
-u8* seconds_timer;
-u8* frames_timer;
+u8 minutes_timer;
+u8 seconds_timer;
+u8 frames_timer;
 
 // Returns true when game should continue, false when game is over
 static bool update_game_timer(){
@@ -971,7 +971,7 @@ static void game_run(void){
 	add_score_player1(0);
 	
 	memset(&player2, 0, sizeof(player2));
-	player2.x = 256*(SCREEN_RES_X - 80);
+	player2.x = 256u*(SCREEN_RES_X - 80);
 	player2.y = 256*120;
 	player2.hands_free = true;
 	player2.player_direction = DIR_LEFT;
