@@ -954,7 +954,7 @@ static void game_run(void){
 	
 	// music_play(0);
 	
-	fade_from_black(PAL_DUMP, 4);
+	fade_from_black(PAL_DUMP, 3);
 	
 	init_arena();
 
@@ -1133,7 +1133,7 @@ static void title_screen(){
 
 	px_spr_clear();
 	
-	fade_from_black(PAL_TITLE, 4);
+	fade_from_black(PAL_TITLE, 3);
 	
 	while (true){
 		read_gamepads();
@@ -1150,11 +1150,13 @@ static void title_screen(){
 		px_wait_nmi();
 	}
 	
-	fade_to_black(PAL_TITLE, 4);
+	fade_to_black(PAL_TITLE, 3);
 	game_run();
 }
 
 static void igda_screen(){
+	u8 timer = FPS*4;
+	
 	px_ppu_sync_disable();{
 		// Decompress the tileset into character memory.
 		px_lz4_to_vram(CHR_ADDR(0, 0), CHR_IGDA);
@@ -1168,11 +1170,13 @@ static void igda_screen(){
 
 	px_spr_clear();
 	
-	fade_from_black(PAL_IGDA, 4);
+	fade_from_black(PAL_IGDA, 3);
 	
 	while (true){
 		read_gamepads();
-		if (JOY_START(pad1.value) || JOY_START(pad2.value)) break;
+		if (JOY_START(pad1.value) || JOY_START(pad2.value) || timer == 0) break;
+		timer--;
+		
 		// scramble the seed
 		rand_seed++;
 		
@@ -1180,7 +1184,7 @@ static void igda_screen(){
 		px_wait_nmi();
 	}
 	
-	fade_to_black(PAL_IGDA, 4);
+	fade_to_black(PAL_IGDA, 3);
 	title_screen();
 }
 
